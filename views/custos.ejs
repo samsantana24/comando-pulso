@@ -1,0 +1,346 @@
+<%- include('partials/head', { title: title }) %>
+<%- include('partials/header', { title: title, user: user }) %>
+
+<main class="container custos">
+  <section class="toolbar">
+    <form method="GET" action="/custos" class="weeks-selector">
+      <label>Janela:
+        <select name="weeks" onchange="this.form.submit()">
+          <% for (const opt of [1,2,3,4,5,6,8,10]) { %>
+            <option value="<%= opt %>" <%= totalWeeks === opt ? 'selected' : '' %>><%= opt %> sem.</option>
+          <% } %>
+        </select>
+      </label>
+    </form>
+    <div class="cenario-info">
+      Cenário: <strong><%= activeScenario ? activeScenario.name : '—' %></strong>
+    </div>
+    <div class="toolbar-actions">
+      <button type="button" class="btn btn-primary" data-modal="venda">+ Venda</button>
+      <button type="button" class="btn btn-primary" data-modal="custo">+ Custo</button>
+      <button type="button" class="btn btn-ghost" data-modal="recorrente">+ Custo recorrente</button>
+    </div>
+  </section>
+
+  <section class="weekly-grid-wrap">
+    <table class="weekly-grid">
+      <thead>
+        <tr>
+          <th>Categoria</th>
+          <% for (const w of weeks) { %>
+            <th class="week-h <%= w.is_current ? 'current' : (w.is_past ? 'past' : 'future') %>">
+              <div class="week-label"><%= w.label %></div>
+              <div class="week-id"><%= w.week_id %></div>
+            </th>
+          <% } %>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-vendas">
+          <td>Vendas (líquido)</td>
+          <% for (const w of weeks) { %>
+            <% const v = salesByWeek[w.week_id] || 0 %>
+            <td class="amount <%= v > 0 ? 'pos' : '' %>"><%= v ? formatBrl(v) : '—' %></td>
+          <% } %>
+        </tr>
+        <% for (const cat of categoriesPresent) { %>
+          <tr>
+            <td><%= cat %></td>
+            <% for (const w of weeks) { %>
+              <% const v = (costsByCatWeek[cat] && costsByCatWeek[cat][w.week_id]) || 0 %>
+              <td class="amount <%= v > 0 ? 'cost' : '' %>"><%= v ? formatBrl(v) : '—' %></td>
+            <% } %>
+          </tr>
+        <% } %>
+        <tr class="row-saldo">
+          <td>Saldo da semana</td>
+          <% for (const w of weeks) { %>
+            <% const b = balanceByWeek[w.week_id] || 0 %>
+            <td class="amount <%= b > 0 ? 'pos' : (b < 0 ? 'neg' : '') %>"><%= formatBrl(b) %></td>
+          <% } %>
+        </tr>
+      </tbody>
+    </table>
+    <% if (categoriesPresent.length === 0 && Object.values(salesByWeek).every((v) => v === 0)) { %>
+      <p class="empty-hint muted">Sem lançamentos nesta janela. Comece adicionando uma venda ou um custo.</p>
+    <% } %>
+  </section>
+
+  <section class="entries-grid">
+    <div class="entries-col">
+      <h3>Vendas recentes</h3>
+      <% if (recentSales.length === 0) { %>
+        <p class="muted">Nenhuma venda ainda.</p>
+      <% } %>
+      <ul class="entries-list">
+        <% for (const s of recentSales) { %>
+          <li>
+            <div class="entry-line">
+              <strong><%= formatBrl(s.net_amount) %></strong>
+              <span class="muted">líq. · <%= formatDateShort(s.date) %></span>
+            </div>
+            <div class="entry-line muted">
+              bruto <%= formatBrl(s.gross_amount) %>
+              <% if (s.client_name) { %> · <%= s.client_name %><% } %>
+              <% if (s.payment_method) { %> · <%= formatPaymentMethod(s.payment_method) %><% } %>
+            </div>
+            <div class="entry-actions">
+              <button type="button" data-action="edit-sale" data-payload='<%- JSON.stringify(s) %>' class="btn-link">editar</button>
+              <button type="button" data-action="delete" data-url="/api/sales/<%= s.id %>" class="btn-link danger">excluir</button>
+            </div>
+          </li>
+        <% } %>
+      </ul>
+    </div>
+    <div class="entries-col">
+      <h3>Custos recentes (janela)</h3>
+      <% if (recentCosts.length === 0) { %>
+        <p class="muted">Nenhum custo na janela atual.</p>
+      <% } %>
+      <ul class="entries-list">
+        <% for (const c of recentCosts) { %>
+          <li>
+            <div class="entry-line">
+              <strong><%= formatBrl(c.amount) %></strong>
+              <span class="muted"><%= formatDateShort(c.date) %></span>
+              <span class="badge <%= c.status %>"><%= c.status === 'paid' ? 'pago' : 'previsto' %></span>
+              <% if (c.recurrence_id) { %><span class="badge recur">recorrente</span><% } %>
+            </div>
+            <div class="entry-line muted">
+              <%= c.category %><% if (c.description) { %> · <%= c.description %><% } %>
+            </div>
+            <div class="entry-actions">
+              <button type="button" data-action="edit-cost" data-payload='<%- JSON.stringify(c) %>' class="btn-link">editar</button>
+              <button type="button" data-action="delete" data-url="/api/costs/<%= c.id %>" class="btn-link danger">excluir</button>
+            </div>
+          </li>
+        <% } %>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<datalist id="categorias-list">
+  <% for (const [grp, items] of Object.entries(categoriesByGroup)) { %>
+    <% for (const item of items) { %>
+      <option value="<%= item %>"><%= grp %></option>
+    <% } %>
+  <% } %>
+</datalist>
+
+<dialog id="modal-venda" class="modal">
+  <form class="api-form" data-endpoint="/api/sales" data-method="POST">
+    <h2>Nova venda</h2>
+    <label class="form-label">Data
+      <input type="date" name="date" value="<%= today %>" required />
+    </label>
+    <div class="form-row">
+      <label class="form-label">Valor bruto (R$)
+        <input type="number" name="gross_amount" step="0.01" min="0" required />
+      </label>
+      <label class="form-label">Valor líquido (R$)
+        <input type="number" name="net_amount" step="0.01" min="0" required />
+      </label>
+    </div>
+    <label class="form-label">Cliente
+      <input type="text" name="client_name" placeholder="Opcional" />
+    </label>
+    <div class="form-row">
+      <label class="form-label">Closer
+        <select name="closer_id">
+          <option value="">—</option>
+          <% for (const c of closers) { %>
+            <option value="<%= c.id %>"><%= c.name %></option>
+          <% } %>
+        </select>
+      </label>
+      <label class="form-label">Pagamento
+        <select name="payment_method">
+          <option value="">—</option>
+          <option value="pix">Pix</option>
+          <option value="cartao_avista">Cartão à vista</option>
+          <option value="cartao_2x">Cartão 2x</option>
+          <option value="cartao_6x">Cartão 6x</option>
+          <option value="cartao_12x">Cartão 12x</option>
+          <option value="outro">Outro</option>
+        </select>
+      </label>
+    </div>
+    <label class="form-label">Observações
+      <textarea name="notes" rows="2"></textarea>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar venda</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="modal-custo" class="modal">
+  <form class="api-form" data-endpoint="/api/costs" data-method="POST">
+    <h2>Novo custo</h2>
+    <div class="form-row">
+      <label class="form-label">Data
+        <input type="date" name="date" value="<%= today %>" required />
+      </label>
+      <label class="form-label">Valor (R$)
+        <input type="number" name="amount" step="0.01" min="0" required />
+      </label>
+    </div>
+    <label class="form-label">Categoria
+      <input list="categorias-list" name="category" required placeholder="Selecione ou digite uma nova" />
+    </label>
+    <label class="form-label">Descrição
+      <input type="text" name="description" />
+    </label>
+    <div class="form-row">
+      <label class="form-label">Status
+        <select name="status">
+          <option value="planned">Previsto</option>
+          <option value="paid">Pago</option>
+        </select>
+      </label>
+      <label class="form-label">Cenário
+        <select name="scenario_id">
+          <option value="">Realidade (todos cenários)</option>
+          <% if (activeScenario) { %>
+            <option value="<%= activeScenario.id %>">Apenas neste (<%= activeScenario.name %>)</option>
+          <% } %>
+        </select>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar custo</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="modal-recorrente" class="modal">
+  <form class="api-form" data-endpoint="/api/costs" data-method="POST">
+    <input type="hidden" name="is_recurring" value="true" />
+    <h2>Custo recorrente</h2>
+    <label class="form-label">Categoria
+      <input list="categorias-list" name="category" required />
+    </label>
+    <label class="form-label">Descrição
+      <input type="text" name="description" />
+    </label>
+    <label class="form-label">Valor base (R$)
+      <input type="number" name="amount" step="0.01" min="0" required />
+    </label>
+    <div class="form-row">
+      <label class="form-label">Padrão
+        <select name="recurrence_pattern">
+          <option value="monthly_day">Mensal (dia X)</option>
+          <option value="every_n_weeks">A cada N semanas</option>
+        </select>
+      </label>
+      <label class="form-label">
+        <span id="recurrence-value-label">Dia do mês (1-31)</span>
+        <input type="number" name="recurrence_value" min="1" max="31" value="5" required />
+      </label>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Início
+        <input type="date" name="recurrence_start" value="<%= today %>" required />
+      </label>
+      <label class="form-label">Fim (opcional)
+        <input type="date" name="recurrence_end" />
+      </label>
+    </div>
+    <label class="form-label">Cenário
+      <select name="scenario_id">
+        <option value="">Realidade (todos cenários)</option>
+        <% if (activeScenario) { %>
+          <option value="<%= activeScenario.id %>">Apenas neste (<%= activeScenario.name %>)</option>
+        <% } %>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Criar recorrência</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="modal-edit-sale" class="modal">
+  <form class="api-form" data-endpoint="" data-method="PATCH">
+    <h2>Editar venda</h2>
+    <label class="form-label">Data
+      <input type="date" name="date" required />
+    </label>
+    <div class="form-row">
+      <label class="form-label">Valor bruto (R$)
+        <input type="number" name="gross_amount" step="0.01" min="0" required />
+      </label>
+      <label class="form-label">Valor líquido (R$)
+        <input type="number" name="net_amount" step="0.01" min="0" required />
+      </label>
+    </div>
+    <label class="form-label">Cliente
+      <input type="text" name="client_name" />
+    </label>
+    <div class="form-row">
+      <label class="form-label">Closer
+        <select name="closer_id">
+          <option value="">—</option>
+          <% for (const c of closers) { %>
+            <option value="<%= c.id %>"><%= c.name %></option>
+          <% } %>
+        </select>
+      </label>
+      <label class="form-label">Pagamento
+        <select name="payment_method">
+          <option value="">—</option>
+          <option value="pix">Pix</option>
+          <option value="cartao_avista">Cartão à vista</option>
+          <option value="cartao_2x">Cartão 2x</option>
+          <option value="cartao_6x">Cartão 6x</option>
+          <option value="cartao_12x">Cartão 12x</option>
+          <option value="outro">Outro</option>
+        </select>
+      </label>
+    </div>
+    <label class="form-label">Observações
+      <textarea name="notes" rows="2"></textarea>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar alterações</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="modal-edit-cost" class="modal">
+  <form class="api-form" data-endpoint="" data-method="PATCH">
+    <h2>Editar custo</h2>
+    <div class="form-row">
+      <label class="form-label">Data
+        <input type="date" name="date" required />
+      </label>
+      <label class="form-label">Valor (R$)
+        <input type="number" name="amount" step="0.01" min="0" required />
+      </label>
+    </div>
+    <label class="form-label">Categoria
+      <input list="categorias-list" name="category" required />
+    </label>
+    <label class="form-label">Descrição
+      <input type="text" name="description" />
+    </label>
+    <label class="form-label">Status
+      <select name="status">
+        <option value="planned">Previsto</option>
+        <option value="paid">Pago</option>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar alterações</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="/js/custos.js"></script>
+<%- include('partials/footer') %>

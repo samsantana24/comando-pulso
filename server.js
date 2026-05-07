@@ -39,6 +39,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use(require('./routes/auth'));
+app.use('/api', require('./routes/api'));
 app.use('/', require('./routes/index'));
 app.use('/pedrra', require('./routes/pedrra'));
 app.use('/custos', require('./routes/custos'));
@@ -50,7 +51,10 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error('[comando-pulso] erro:', err.message);
+  console.error('[comando-pulso] erro:', err.stack || err.message);
+  if (req.path && req.path.startsWith('/api/')) {
+    return res.status(500).json({ error: err.message || 'erro interno' });
+  }
   res.status(500).render('error', { code: 500, message: 'Erro interno do servidor' });
 });
 
