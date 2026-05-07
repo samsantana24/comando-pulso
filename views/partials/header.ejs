@@ -53,5 +53,5 @@
   <% } %>
 </header>
 <% if (typeof user !== 'undefined' && user && user.role === 'master') { %>
-<script src="/js/header.js"></script>
+<script src="/js/header.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
 <% } %>

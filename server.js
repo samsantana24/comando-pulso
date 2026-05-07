@@ -12,6 +12,9 @@ const { securityHeaders } = require('./lib/security');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const ASSET_VERSION = String(Date.now());
+app.locals.assetVersion = ASSET_VERSION;
+
 app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
