@@ -1,0 +1,16 @@
+<%- include('partials/head', { title: 'Entrar', bodyClass: 'auth' }) %>
+  <main class="auth-card">
+    <div class="brand brand-large">
+      <span class="brand-dot"></span>
+      <span class="brand-name">Comando Pulso</span>
+    </div>
+    <p class="muted">Sistema interno de gestão de caixa.</p>
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+    <a href="/auth/google" class="btn btn-primary btn-block">
+      <span>Entrar com Google</span>
+    </a>
+    <p class="hint">Acesso restrito a contas <code>@usepulso.org</code> previamente cadastradas.</p>
+  </main>
+<%- include('partials/footer') %>

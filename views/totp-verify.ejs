@@ -1,0 +1,33 @@
+<%- include('partials/head', { title: 'Confirmar 2º fator', bodyClass: 'auth' }) %>
+  <main class="auth-card">
+    <div class="brand brand-large">
+      <span class="brand-dot"></span>
+      <span class="brand-name">Confirmar 2º fator</span>
+    </div>
+    <p class="muted">Digite o código de 6 dígitos do seu app autenticador para <strong><%= user.email %></strong>.</p>
+
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <form method="POST" action="/totp/verify" class="totp-form">
+      <label class="form-label" for="token">Código do app</label>
+      <input
+        type="text"
+        id="token"
+        name="token"
+        inputmode="numeric"
+        pattern="[0-9 ]{6,7}"
+        maxlength="7"
+        autocomplete="one-time-code"
+        autofocus
+        required
+      />
+      <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+    </form>
+
+    <form method="POST" action="/logout" class="logout-form-inline">
+      <button type="submit" class="btn btn-ghost btn-small">Sair</button>
+    </form>
+  </main>
+<%- include('partials/footer') %>

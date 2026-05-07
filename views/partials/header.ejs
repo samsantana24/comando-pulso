@@ -1,0 +1,24 @@
+<header class="app-header">
+  <div class="brand">
+    <span class="brand-dot"></span>
+    <span class="brand-name">Comando Pulso<% if (typeof title !== 'undefined') { %> · <%= title %><% } %></span>
+  </div>
+  <% if (typeof user !== 'undefined' && user) { %>
+  <nav class="app-nav">
+    <% if (user.role === 'master') { %>
+      <a href="/pedrra">PEDRRA</a>
+    <% } %>
+    <a href="/custos">Custos e Vendas</a>
+    <% if (user.role === 'master') { %>
+      <a href="/funil">Funil</a>
+      <a href="/configuracoes">Configurações</a>
+    <% } %>
+  </nav>
+  <div class="user-menu">
+    <span class="user-email"><%= user.email %></span>
+    <form method="POST" action="/logout" class="logout-form">
+      <button type="submit" class="btn btn-ghost">Sair</button>
+    </form>
+  </div>
+  <% } %>
+</header>
