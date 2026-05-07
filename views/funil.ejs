@@ -1,0 +1,154 @@
+<%- include('partials/head', { title: title }) %>
+<%- include('partials/header', { title: title, user: user, scenarios: locals.scenarios, activeScenario: locals.activeScenario }) %>
+
+<main class="container funil">
+  <div class="lab-banner">
+    <span class="lab-tag">LABORATÓRIO</span>
+    <span class="muted">Este é um cenário de simulação puro. Nada aqui é fato real.</span>
+  </div>
+
+  <section class="funnel-floor sdr-floor">
+    <div class="floor-header">
+      <h2>Andar SDR</h2>
+      <button type="button" class="btn btn-ghost btn-small" data-add-member data-role="sdr">+ Adicionar SDR</button>
+    </div>
+
+    <div class="floor-row">
+      <label class="form-label">Investimento ads/semana (R$)
+        <input type="number" id="ads_per_week" data-funnel="ads_per_week" min="0" step="100" value="<%= funnel.ads_per_week %>" />
+      </label>
+      <label class="form-label">CPL (R$)
+        <input type="number" id="cpl" data-funnel="cpl" min="0" step="1" value="<%= funnel.cpl %>" />
+      </label>
+      <div class="kpi-inline">
+        <span class="kpi-label">Leads gerados</span>
+        <span class="kpi-value" id="leads_gerados">0</span>
+      </div>
+    </div>
+
+    <table class="team-table" id="sdrs-table">
+      <thead>
+        <tr>
+          <th>SDR</th>
+          <th class="num">Capacidade /sem</th>
+          <th class="num">Show rate %</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for (const m of sdrs) { %>
+          <tr data-member-id="<%= m.id %>" data-role="sdr">
+            <td><%= m.name %></td>
+            <td class="num"><input type="number" min="0" step="1" value="<%= m.capacity_per_week %>" data-perf="capacity_per_week" /></td>
+            <td class="num"><input type="number" min="0" max="100" step="1" value="<%= m.conversion_pct %>" data-perf="conversion_pct" /></td>
+            <td><button type="button" class="btn-link danger" data-remove-member data-id="<%= m.id %>">remover</button></td>
+          </tr>
+        <% } %>
+        <% if (sdrs.length === 0) { %>
+          <tr><td colspan="4" class="muted center">Nenhum SDR ativo. Adicione acima.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+
+    <div class="floor-row">
+      <label class="form-label">Rebarba Selfiebook /sem
+        <input type="number" id="rebarba_sb_per_week" data-funnel="rebarba_sb_per_week" min="0" step="1" value="<%= funnel.rebarba_sb_per_week %>" />
+      </label>
+      <div class="kpi-inline">
+        <span class="kpi-label">Calls agendadas (total)</span>
+        <span class="kpi-value" id="calls_agendadas">0</span>
+      </div>
+      <div class="kpi-inline">
+        <span class="kpi-label">Calls realizadas</span>
+        <span class="kpi-value" id="calls_realizadas">0</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="funnel-arrow">↓ entrega calls realizadas</div>
+
+  <section class="funnel-floor closer-floor">
+    <div class="floor-header">
+      <h2>Andar Closer</h2>
+      <button type="button" class="btn btn-ghost btn-small" data-add-member data-role="closer">+ Adicionar Closer</button>
+    </div>
+
+    <table class="team-table" id="closers-table">
+      <thead>
+        <tr>
+          <th>Closer</th>
+          <th class="num">Conv. call % (venda direta)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for (const m of closers) { %>
+          <tr data-member-id="<%= m.id %>" data-role="closer">
+            <td><%= m.name %></td>
+            <td class="num"><input type="number" min="0" max="100" step="1" value="<%= m.conversion_pct %>" data-perf="conversion_pct" /></td>
+            <td><button type="button" class="btn-link danger" data-remove-member data-id="<%= m.id %>">remover</button></td>
+          </tr>
+        <% } %>
+        <% if (closers.length === 0) { %>
+          <tr><td colspan="3" class="muted center">Nenhum Closer ativo. Adicione acima.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+
+    <div class="floor-row results-row">
+      <div class="kpi-inline">
+        <span class="kpi-label">Vendas em call</span>
+        <span class="kpi-value strong" id="vendas_call">0</span>
+      </div>
+      <div class="kpi-inline">
+        <span class="kpi-label">Bônus forecast %</span>
+        <input type="number" id="forecast_bonus_pct" data-funnel="forecast_bonus_pct" min="0" max="100" step="1" value="<%= funnel.forecast_bonus_pct %>" />
+      </div>
+      <div class="kpi-inline">
+        <span class="kpi-label">+ vendas forecast</span>
+        <span class="kpi-value" id="vendas_forecast">+0</span>
+      </div>
+    </div>
+
+    <div class="floor-row">
+      <label class="form-label">Ticket médio (R$)
+        <input type="number" id="ticket_avg" data-funnel="ticket_avg" min="0" step="100" value="<%= funnel.ticket_avg %>" />
+      </label>
+      <label class="form-label">Taxa de pgto. %
+        <input type="number" id="payment_tax_pct" data-funnel="payment_tax_pct" min="0" max="100" step="1" value="<%= funnel.payment_tax_pct %>" />
+      </label>
+    </div>
+
+    <div class="floor-row results-row">
+      <div class="kpi-inline">
+        <span class="kpi-label">Receita projetada bruta</span>
+        <span class="kpi-value" id="receita_bruta">R$ 0</span>
+      </div>
+      <div class="kpi-inline">
+        <span class="kpi-label">Receita projetada líquida</span>
+        <span class="kpi-value strong" id="receita_liquida">R$ 0</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="funnel-actions">
+    <button type="button" class="btn btn-primary" id="save-funnel">Salvar funil neste cenário (<%= activeScenario.name %>)</button>
+  </div>
+</main>
+
+<dialog id="modal-add-member" class="modal">
+  <form id="form-add-member">
+    <h2 id="modal-add-title">Adicionar pessoa</h2>
+    <input type="hidden" name="role" value="" />
+    <label class="form-label">Nome
+      <input type="text" name="name" required autofocus />
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Adicionar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="/js/funil.js"></script>
+<%- include('partials/footer') %>

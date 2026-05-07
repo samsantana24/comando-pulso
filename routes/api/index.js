@@ -8,6 +8,7 @@ router.use('/costs', require('./costs'));
 router.use('/recurrences', require('./recurrences'));
 router.use('/team', require('./team'));
 router.use('/scenarios', require('./scenarios'));
+router.use('/funnel', require('./funnel'));
 
 router.use((req, res) => res.status(404).json({ error: 'endpoint não encontrado' }));
 

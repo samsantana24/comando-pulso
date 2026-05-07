@@ -1,10 +1,42 @@
-const express = require('express');
+const router = require('express').Router();
 const { requireAuth, requireMaster, requireTotp } = require('../lib/auth');
-
-const router = express.Router();
+const team = require('../db/queries/team');
+const funnel = require('../db/queries/funnel');
+const scenarios = require('../db/queries/scenarios');
 
 router.get('/', requireAuth, requireMaster, requireTotp, (req, res) => {
-  res.render('stub', { title: 'Funil de Performance', user: req.user, phase: 'Fase 5' });
+  const active = scenarios.getActive();
+  if (!active) {
+    return res.render('error', { code: 400, message: 'Nenhum cenário ativo. Crie ou ative um cenário pelo header.' });
+  }
+  const funnelData = funnel.getByScenario(active.id) || {
+    ads_per_week: 0, cpl: 0, rebarba_sb_per_week: 0,
+    show_rate_pct: 70, call_to_sale_pct: 25, forecast_bonus_pct: 5,
+    ticket_avg: 10000, payment_tax_pct: 12,
+  };
+  const teamPerf = funnel.getTeamPerformance(active.id);
+  const teamPerfMap = Object.fromEntries(teamPerf.map((p) => [p.team_member_id, p]));
+
+  const sdrs = team.list({ role: 'sdr' });
+  const closers = team.list({ role: 'closer' });
+
+  function joinPerf(member) {
+    const p = teamPerfMap[member.id];
+    return {
+      ...member,
+      capacity_per_week: p ? p.capacity_per_week : 0,
+      conversion_pct: p ? p.conversion_pct : (member.role === 'sdr' ? 70 : 25),
+    };
+  }
+
+  res.render('funil', {
+    title: 'Funil',
+    user: req.user,
+    activeScenario: active,
+    funnel: funnelData,
+    sdrs: sdrs.map(joinPerf),
+    closers: closers.map(joinPerf),
+  });
 });
 
 module.exports = router;
