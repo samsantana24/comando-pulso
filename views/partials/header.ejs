@@ -14,11 +14,44 @@
       <a href="/configuracoes">Configurações</a>
     <% } %>
   </nav>
+  <% if (typeof scenarios !== 'undefined' && user.role === 'master') { %>
+    <div class="scenario-picker" data-component="scenario-picker">
+      <button type="button" class="scenario-btn" data-toggle>
+        <span class="scenario-dot" style="background: <%= activeScenario ? activeScenario.color : '#94A3B8' %>"></span>
+        <span><%= activeScenario ? activeScenario.name : 'Sem cenário' %></span>
+        <span class="caret">▾</span>
+      </button>
+      <div class="scenario-menu" data-menu hidden>
+        <ul class="scenario-list">
+          <% for (const s of scenarios) { %>
+            <li class="scenario-item <%= s.is_active ? 'active' : '' %>" data-id="<%= s.id %>">
+              <button type="button" class="scenario-pick" data-action="activate" data-id="<%= s.id %>">
+                <span class="scenario-dot" style="background: <%= s.color %>"></span>
+                <span class="scenario-name"><%= s.name %></span>
+                <% if (s.is_active) { %><span class="active-flag">ativo</span><% } %>
+              </button>
+              <div class="scenario-actions">
+                <button type="button" class="btn-link" data-action="duplicate" data-id="<%= s.id %>" data-name="<%- s.name.replace(/"/g, '&quot;') %>">duplicar</button>
+                <button type="button" class="btn-link" data-action="rename" data-id="<%= s.id %>" data-name="<%- s.name.replace(/"/g, '&quot;') %>">renomear</button>
+                <button type="button" class="btn-link danger" data-action="delete" data-id="<%= s.id %>" data-name="<%- s.name.replace(/"/g, '&quot;') %>">excluir</button>
+              </div>
+            </li>
+          <% } %>
+        </ul>
+        <div class="scenario-footer">
+          <button type="button" class="btn btn-ghost btn-small" data-action="new">+ Novo cenário</button>
+        </div>
+      </div>
+    </div>
+  <% } %>
   <div class="user-menu">
     <span class="user-email"><%= user.email %></span>
     <form method="POST" action="/logout" class="logout-form">
-      <button type="submit" class="btn btn-ghost">Sair</button>
+      <button type="submit" class="btn btn-ghost btn-small">Sair</button>
     </form>
   </div>
   <% } %>
 </header>
+<% if (typeof user !== 'undefined' && user && user.role === 'master') { %>
+<script src="/js/header.js"></script>
+<% } %>
