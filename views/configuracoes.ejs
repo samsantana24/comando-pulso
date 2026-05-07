@@ -1,0 +1,107 @@
+<%- include('partials/head', { title: title }) %>
+<%- include('partials/header', { title: title, user: user, scenarios: locals.scenarios, activeScenario: locals.activeScenario }) %>
+
+<main class="container settings-page">
+
+  <section class="settings-card">
+    <h2>Saldo e configurações financeiras</h2>
+    <form id="form-settings" class="settings-form">
+      <label class="form-label">Saldo inicial em conta (R$)
+        <input type="number" name="initial_cash_brl" min="0" step="0.01" value="<%= settings.initial_cash_brl || 0 %>" />
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="include_initial_cash" value="1" <%= settings.include_initial_cash === '1' ? 'checked' : '' %> />
+        Incluir saldo inicial no cálculo de caixa e runway
+      </label>
+      <label class="form-label">Taxa de pagamento padrão (%)
+        <input type="number" name="default_payment_tax_pct" min="0" max="100" step="0.1" value="<%= settings.default_payment_tax_pct || 12 %>" />
+      </label>
+      <button type="submit" class="btn btn-primary">Salvar configurações</button>
+      <span class="settings-status" id="settings-status"></span>
+    </form>
+  </section>
+
+  <section class="settings-card">
+    <h2>Time comercial</h2>
+    <p class="muted">SDRs e Closers que aparecem no funil de performance e como closer responsável nas vendas.</p>
+    <form id="form-team-add" class="settings-form-inline">
+      <input type="text" name="name" placeholder="Nome" required />
+      <select name="role" required>
+        <option value="sdr">SDR</option>
+        <option value="closer">Closer</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-small">+ Adicionar</button>
+    </form>
+    <table class="team-table">
+      <thead>
+        <tr><th>Nome</th><th>Função</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody id="team-tbody">
+        <% for (const m of team) { %>
+          <tr data-id="<%= m.id %>">
+            <td><%= m.name %></td>
+            <td><%= m.role === 'sdr' ? 'SDR' : 'Closer' %></td>
+            <td><%= m.active ? 'Ativo' : 'Inativo' %></td>
+            <td>
+              <button type="button" class="btn-link" data-action="toggle" data-id="<%= m.id %>" data-active="<%= m.active %>"><%= m.active ? 'desativar' : 'reativar' %></button>
+              <button type="button" class="btn-link danger" data-action="remove" data-id="<%= m.id %>" data-name="<%- m.name.replace(/"/g, '&quot;') %>">remover</button>
+            </td>
+          </tr>
+        <% } %>
+        <% if (team.length === 0) { %>
+          <tr><td colspan="4" class="muted center">Nenhum membro cadastrado.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="settings-card">
+    <h2>Categorias de custo</h2>
+    <p class="muted">Lista pré-cadastrada (editável via /api/settings em fase futura). Você pode digitar categorias livres ao lançar um custo.</p>
+    <div class="cat-groups">
+      <% for (const [grp, items] of Object.entries(categoriesByGroup)) { %>
+        <div class="cat-group">
+          <h3><%= grp %></h3>
+          <ul>
+            <% for (const item of items) { %><li><%= item %></li><% } %>
+          </ul>
+        </div>
+      <% } %>
+    </div>
+  </section>
+
+  <section class="settings-card">
+    <h2>Backup e exportação</h2>
+    <p class="muted">Exporta o estado atual do banco em JSON (todas as tabelas exceto users/sessões).</p>
+    <a class="btn btn-primary" href="/api/export" download>Exportar JSON completo</a>
+  </section>
+
+  <section class="settings-card">
+    <h2>Audit log <span class="muted">(últimas <%= auditEntries.length %> entradas)</span></h2>
+    <div class="audit-table-wrap">
+      <table class="audit-table">
+        <thead>
+          <tr><th>Quando</th><th>Quem</th><th>Ação</th><th>Entidade</th><th>ID</th></tr>
+        </thead>
+        <tbody>
+          <% for (const a of auditEntries) { %>
+            <tr>
+              <td class="muted"><%= a.created_at %></td>
+              <td><%= a.user_email %></td>
+              <td><span class="badge action-<%= a.action.toLowerCase() %>"><%= a.action %></span></td>
+              <td><%= a.entity_type %></td>
+              <td><%= a.entity_id || '—' %></td>
+            </tr>
+          <% } %>
+          <% if (auditEntries.length === 0) { %>
+            <tr><td colspan="5" class="muted center">Nenhuma entrada ainda.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<script src="/js/configuracoes.js"></script>
+<%- include('partials/footer') %>

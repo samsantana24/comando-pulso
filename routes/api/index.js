@@ -10,6 +10,9 @@ router.use('/team', require('./team'));
 router.use('/scenarios', require('./scenarios'));
 router.use('/funnel', require('./funnel'));
 router.use('/cashflow', require('./cashflow'));
+router.use('/settings', require('./settings'));
+router.use('/audit', require('./audit'));
+router.use('/export', require('./export'));
 
 router.use((req, res) => res.status(404).json({ error: 'endpoint não encontrado' }));
 

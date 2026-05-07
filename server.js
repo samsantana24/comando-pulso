@@ -7,6 +7,7 @@ const passport = require('passport');
 
 const db = require('./db/connection');
 const { configurePassport } = require('./lib/auth');
+const { securityHeaders } = require('./lib/security');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -14,6 +15,8 @@ const PORT = process.env.PORT || 3001;
 app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+app.use(securityHeaders);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
