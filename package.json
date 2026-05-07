@@ -1,0 +1,23 @@
+{
+  "name": "comando-pulso",
+  "version": "0.1.0",
+  "description": "Comando Pulso — sistema interno de gestão de caixa em tempo real",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "connect-sqlite3": "^0.9.15",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.0",
+    "express-session": "^1.18.1",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "qrcode": "^1.5.4",
+    "speakeasy": "^2.0.0"
+  }
+}
