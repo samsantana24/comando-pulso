@@ -529,9 +529,27 @@ dialog.modal .modal-actions {
 
 .funnel-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 14px;
   margin-top: 18px;
 }
+
+.save-status {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.save-status[data-state="idle"]    { color: var(--muted); }
+.save-status[data-state="pending"] { color: #FBBF24; border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.10); }
+.save-status[data-state="saving"]  { color: #93C5FD; border-color: rgba(59, 130, 246, 0.45); background: rgba(59, 130, 246, 0.10); }
+.save-status[data-state="saved"]   { color: #4ADE80; border-color: rgba(34, 197, 94, 0.45); background: rgba(34, 197, 94, 0.10); }
+.save-status[data-state="error"]   { color: #FCA5A5; border-color: rgba(239, 68, 68, 0.45); background: rgba(239, 68, 68, 0.10); }
 
 .pedrra .kpi-bar {
   display: grid;
