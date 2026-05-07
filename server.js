@@ -38,8 +38,8 @@ configurePassport();
 app.use(passport.initialize());
 app.use(passport.session());
 
-const { injectScenarios } = require('./lib/locals');
-app.use(injectScenarios);
+const { injectLocals } = require('./lib/locals');
+app.use(injectLocals);
 
 app.use(require('./routes/auth'));
 app.use('/api', require('./routes/api'));

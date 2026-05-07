@@ -1,0 +1,85 @@
+<%- include('partials/head', { title: title }) %>
+<%- include('partials/header', { title: title, user: user, scenarios: locals.scenarios, activeScenario: locals.activeScenario }) %>
+
+<main class="container pedrra">
+  <section class="kpi-bar">
+    <div class="kpi-card">
+      <span class="kpi-card-label">Caixa hoje</span>
+      <span class="kpi-card-value strong"><%= formatBrl(cashToday) %></span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-card-label">Runway (cenário ativo)</span>
+      <span class="kpi-card-value strong">
+        <%= typeof runway.runway_weeks === 'number' ? runway.runway_weeks.toFixed(1) + ' sem' : runway.runway_weeks %>
+      </span>
+      <% if (runway.weekly_burn > 0) { %>
+        <span class="kpi-card-foot muted">queima ~<%= formatBrl(runway.weekly_burn) %>/sem</span>
+      <% } %>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-card-label">Sem. passada</span>
+      <span class="kpi-card-value <%= lastWeekResult >= 0 ? 'pos' : 'neg' %>"><%= formatBrl(lastWeekResult) %></span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-card-label">Sem. atual</span>
+      <span class="kpi-card-value <%= currentWeekResult >= 0 ? 'pos' : 'neg' %>"><%= formatBrl(currentWeekResult) %></span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-card-label">Próx. 2 sem (projetado)</span>
+      <span class="kpi-card-value <%= projection2Weeks >= 0 ? 'pos' : 'neg' %>"><%= formatBrl(projection2Weeks) %></span>
+    </div>
+  </section>
+
+  <section class="chart-controls">
+    <label>Janela passada
+      <select id="past-weeks">
+        <option value="1" selected>1 sem</option>
+        <option value="2">2 sem</option>
+        <option value="4">4 sem</option>
+        <option value="8">8 sem</option>
+      </select>
+    </label>
+    <label>Futuro
+      <select id="future-weeks">
+        <option value="2" selected>2 sem</option>
+        <option value="4">4 sem</option>
+        <option value="8">8 sem</option>
+        <option value="12">12 sem</option>
+      </select>
+    </label>
+    <span class="chart-status muted" id="chart-status"></span>
+  </section>
+
+  <section class="chart-wrap">
+    <canvas id="cashflow-chart" height="280"></canvas>
+  </section>
+
+  <section class="projection-table-wrap">
+    <h3>Projeção semana a semana <span class="muted">(edite "vendas projetadas" pra simular)</span></h3>
+    <table class="projection-table" id="projection-table">
+      <thead>
+        <tr>
+          <th>Semana</th>
+          <th class="num">Vendas (real/proj)</th>
+          <th class="num">Custos</th>
+          <th class="num">Saldo da sem.</th>
+          <th class="num">Caixa após</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+  window.PEDRRA_INITIAL = <%- JSON.stringify({
+    series: cashflow.series,
+    cashAtStart: cashflow.cash_at_start,
+    cashToday: cashflow.cash_today,
+    projectedWeeklyNet: cashflow.projected_weekly_net || 0,
+    activeScenario: activeScenario,
+  }) %>;
+</script>
+<script src="/js/pedrra.js"></script>
+<%- include('partials/footer') %>
