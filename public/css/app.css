@@ -1254,11 +1254,11 @@ button, a, [role="button"], .scenario-item, [data-modal] {
 .pedrra .kpi-bar,
 .kpi-bar {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
   margin: 32px 0;
 }
-.kpi-bar-6 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.kpi-bar-6 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .kpi-card {
   position: relative;
   padding: 24px 22px;
@@ -1325,7 +1325,7 @@ button, a, [role="button"], .scenario-item, [data-modal] {
 }
 .kpi-card-value {
   display: block;
-  font-size: clamp(20px, 1.9vw, 28px);
+  font-size: clamp(22px, 2vw, 32px);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--fg);
@@ -1334,8 +1334,10 @@ button, a, [role="button"], .scenario-item, [data-modal] {
   font-variant-numeric: tabular-nums;
   line-height: 1.05;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+}
+.kpi-card.kpi-primary .kpi-card-value {
+  font-size: clamp(26px, 2.4vw, 38px);
 }
 .kpi-card-value.strong { color: var(--fg); }
 .kpi-card-value.pos { color: var(--pos); -webkit-text-fill-color: var(--pos); background: none; }
@@ -1915,7 +1917,7 @@ body.values-hidden .kpi-card-value::after { content: ''; }
 .kpi-card-value { transition: transform var(--duration) var(--ease-pulso); display: block; }
 
 /* Tipografia escalada nos KPIs (sem quebrar o ellipsis da Onda 3) */
-.kpi-card.kpi-primary .kpi-card-value { font-size: clamp(28px, 3vw, 44px); }
+.kpi-card.kpi-primary .kpi-card-value { font-size: clamp(26px, 2.4vw, 38px); }
 
 /* === Botões com brilho percorrendo no hover === */
 .btn-primary { position: relative; overflow: hidden; }

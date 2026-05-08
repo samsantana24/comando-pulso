@@ -1,18 +1,34 @@
 (function () {
   const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const BRL_COMPACT = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  });
+
+  function formatBrlSmart(value) {
+    return Math.abs(value) >= 100000
+      ? BRL_COMPACT.format(value)
+      : BRL.format(value);
+  }
 
   function animateCountUp(element, finalValue, duration = 800) {
     const start = 0;
     const startTime = performance.now();
     const isCurrency = element.dataset.format === 'brl';
+    const useCompact = element.dataset.compact === '1';
+    const formatter = useCompact
+      ? formatBrlSmart
+      : (isCurrency ? (v) => BRL.format(v) : (v) => Math.round(v).toString());
     function frame(now) {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = start + (finalValue - start) * eased;
-      element.textContent = isCurrency ? BRL.format(current) : Math.round(current).toString();
+      element.textContent = formatter(current);
       if (progress < 1) requestAnimationFrame(frame);
-      else element.textContent = isCurrency ? BRL.format(finalValue) : Math.round(finalValue).toString();
+      else element.textContent = formatter(finalValue);
     }
     requestAnimationFrame(frame);
   }
