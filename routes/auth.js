@@ -32,10 +32,18 @@ router.get(
       }
       req.logIn(user, (loginErr) => {
         if (loginErr) return res.redirect('/login?error=' + encodeURIComponent('Falha ao iniciar sessão'));
-        if (user.totp_enabled) {
-          return res.redirect('/totp/verify');
-        }
-        return res.redirect('/totp/setup');
+        // Regenerar session ID após login bem-sucedido (defesa contra Session Fixation)
+        req.session.regenerate((regenErr) => {
+          if (regenErr) return res.redirect('/login?error=' + encodeURIComponent('Falha de sessão'));
+          req.session.passport = { user: user.id };
+          req.session.save((saveErr) => {
+            if (saveErr) return res.redirect('/login?error=' + encodeURIComponent('Falha ao salvar sessão'));
+            if (user.totp_enabled) {
+              return res.redirect('/totp/verify');
+            }
+            return res.redirect('/totp/setup');
+          });
+        });
       });
     })(req, res, next);
   }
@@ -91,8 +99,17 @@ router.post('/totp/verify', requireAuth, (req, res) => {
   if (!ok) {
     return res.redirect('/totp/verify?error=' + encodeURIComponent('Código inválido. Tente de novo.'));
   }
-  req.session.totp_verified = true;
-  res.redirect('/');
+  // Regenerar session ID após escalonamento de privilégio (TOTP verificado)
+  const userId = req.user.id;
+  req.session.regenerate((regenErr) => {
+    if (regenErr) return res.redirect('/totp/verify?error=' + encodeURIComponent('Falha de sessão'));
+    req.session.passport = { user: userId };
+    req.session.totp_verified = true;
+    req.session.save((saveErr) => {
+      if (saveErr) return res.redirect('/totp/verify?error=' + encodeURIComponent('Falha ao salvar sessão'));
+      res.redirect('/');
+    });
+  });
 });
 
 router.post('/logout', (req, res, next) => {
