@@ -4,8 +4,22 @@ const recurrence = require('../../db/queries/recurrence');
 const { expandRule } = require('../../lib/recurrence');
 const { audit } = require('../../lib/audit');
 
+const ADS_CATEGORY = 'Tráfego Pago (Google / Meta Ads)';
+const ADS_BLOCK_ERROR = "A categoria 'Tráfego Pago (Google / Meta Ads)' só pode ser lançada via 'Investimento em Ads'. Use o botão dedicado.";
+
 const isYmd = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
 const isNonNegative = (n) => { const x = Number(n); return Number.isFinite(x) && x >= 0; };
+
+function rejectsAdsCategory(body) {
+  if (!body || !body.category) return false;
+  if (body.category !== ADS_CATEGORY) {
+    if (/ads|tráfego pago|trafego pago/i.test(String(body.category))) {
+      console.warn('[costs] categoria customizada com nome ads-like:', body.category);
+    }
+    return false;
+  }
+  return Number(body.is_ads) !== 1;
+}
 
 router.get('/', (req, res) => {
   const { from, to, scenario_id, status } = req.query;
@@ -26,6 +40,7 @@ router.post('/', (req, res) => {
   const isRecurring = b.is_recurring === true || b.is_recurring === 'true';
   if (!b.category) return res.status(400).json({ error: 'category é obrigatório' });
   if (!isNonNegative(b.amount)) return res.status(400).json({ error: 'amount inválido' });
+  if (rejectsAdsCategory(b)) return res.status(400).json({ error: ADS_BLOCK_ERROR });
 
   if (isRecurring) {
     if (!['monthly_day', 'every_n_weeks'].includes(b.recurrence_pattern)) {
@@ -104,6 +119,9 @@ router.patch('/:id', (req, res) => {
   if ('scenario_id' in fields) fields.scenario_id = fields.scenario_id ? Number(fields.scenario_id) : null;
   if ('status' in fields && !['paid', 'planned'].includes(fields.status)) {
     return res.status(400).json({ error: 'status inválido' });
+  }
+  if ('category' in fields && fields.category === ADS_CATEGORY && Number(before.is_ads) !== 1) {
+    return res.status(400).json({ error: ADS_BLOCK_ERROR });
   }
 
   const updated = costs.update(id, fields);
