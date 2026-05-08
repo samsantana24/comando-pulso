@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { requireMaster } = require('../../lib/auth');
-const { listForRole, setMany, PERM_KEYS } = require('../../lib/permissions');
+const { listForRole, setMany, PERM_KEYS, applyPreset } = require('../../lib/permissions');
 const { audit } = require('../../lib/audit');
 
 router.get('/', requireMaster, (req, res) => {
@@ -20,6 +20,19 @@ router.put('/', requireMaster, (req, res) => {
   const after = listForRole(role);
   audit(req, 'UPDATE', 'permissions', null, before, after);
   res.json({ role, items: after });
+});
+
+router.post('/preset', requireMaster, (req, res) => {
+  const role = (req.body && req.body.role) || 'financeiro';
+  const preset = (req.body && req.body.preset) || '';
+  if (!['default', 'all-on', 'all-off'].includes(preset)) {
+    return res.status(400).json({ error: 'preset inválido' });
+  }
+  const before = listForRole(role);
+  applyPreset(role, preset, req.user.email);
+  const after = listForRole(role);
+  audit(req, 'UPDATE', 'permissions', null, { preset, before }, after);
+  res.json({ role, preset, items: after });
 });
 
 module.exports = router;

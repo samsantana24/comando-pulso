@@ -87,27 +87,42 @@
     </div>
   </section>
 
-  <section class="settings-card">
-    <h2>Permissões — Rachel <span class="muted">(role: financeiro)</span></h2>
-    <p class="muted">Marque o que a Rachel pode acessar e fazer. Master sempre tem acesso total. Mudanças aplicam após próximo login dela.</p>
-    <form id="form-permissions" class="settings-form">
-      <% for (const grp of permGroupOrder) { %>
-        <% if (permsByGroup[grp] && permsByGroup[grp].length > 0) { %>
-          <div class="perm-group">
-            <h3><%= grp %></h3>
-            <% for (const p of permsByGroup[grp]) { %>
-              <label class="checkbox-label">
-                <input type="checkbox" data-perm-key="<%= p.key %>" <%= p.allowed ? 'checked' : '' %> />
-                <%= p.label %>
-                <span class="muted code-tag"><%= p.key %></span>
-              </label>
-            <% } %>
-          </div>
-        <% } %>
-      <% } %>
-      <button type="submit" class="btn btn-primary">Salvar permissões</button>
-      <span class="settings-status" id="perm-status"></span>
-    </form>
+  <section class="settings-card permissions-panel" id="permissions-panel">
+    <div class="permissions-header">
+      <h2>Permissões da equipe</h2>
+      <p class="muted">Configure exatamente o que cada role pode fazer no sistema. Master sempre tem acesso total.</p>
+    </div>
+
+    <div class="permissions-role-tabs">
+      <button class="role-tab is-active" data-role="financeiro" type="button">
+        <span class="role-tab-icon">FN</span>
+        <span class="role-tab-label">
+          <span class="role-tab-name">Financeiro</span>
+          <span class="role-tab-sub">ex: Rachel Moghrabi</span>
+        </span>
+      </button>
+    </div>
+
+    <div class="permissions-actions-bar">
+      <div class="permissions-summary" id="permissions-summary">
+        <strong id="perm-count-on">0</strong> de <strong id="perm-count-total">0</strong> permissões ativas
+      </div>
+      <div class="permissions-quick-actions">
+        <input type="search" id="perm-search" placeholder="Filtrar permissão…" class="perm-search" />
+        <button type="button" class="btn btn-ghost btn-small" data-preset="default">Padrão sistema</button>
+        <button type="button" class="btn btn-ghost btn-small" data-preset="all-on">Liberar tudo</button>
+        <button type="button" class="btn btn-ghost btn-small" data-preset="all-off">Bloquear tudo</button>
+      </div>
+    </div>
+
+    <div class="permissions-groups" id="permissions-groups">
+      <p class="muted center">Carregando permissões…</p>
+    </div>
+
+    <div class="permissions-footer">
+      <button type="button" class="btn btn-primary" id="btn-save-perms">Salvar alterações</button>
+      <span class="permissions-status" id="permissions-status"></span>
+    </div>
   </section>
 
   <section class="settings-card">

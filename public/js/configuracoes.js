@@ -165,30 +165,200 @@
     }
   });
 
-  const permForm = document.getElementById('form-permissions');
-  if (permForm) {
-    permForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const permStatus = document.getElementById('perm-status');
-      const updates = [...permForm.querySelectorAll('input[type="checkbox"][data-perm-key]')]
-        .map((cb) => ({ key: cb.dataset.permKey, allowed: cb.checked }));
-      permStatus.textContent = 'salvando…';
+  const permsPanel = document.getElementById('permissions-panel');
+  if (permsPanel) {
+    initPermissionsPanel();
+  }
+
+  function initPermissionsPanel() {
+    const groupsContainer = document.getElementById('permissions-groups');
+    const summaryOn = document.getElementById('perm-count-on');
+    const summaryTotal = document.getElementById('perm-count-total');
+    const status = document.getElementById('permissions-status');
+    const search = document.getElementById('perm-search');
+    const saveBtn = document.getElementById('btn-save-perms');
+    const presetBtns = permsPanel.querySelectorAll('[data-preset]');
+    const tabs = permsPanel.querySelectorAll('.role-tab');
+
+    const GROUP_ICONS = {
+      'Navegação': '⊞',
+      'Vendas': '●',
+      'Custos': '▣',
+      'Ads': '★',
+      'Recebíveis': '◆',
+      'Visualização': '◉',
+    };
+
+    let currentRole = 'financeiro';
+    let items = [];
+    let dirty = false;
+
+    async function load(role) {
+      groupsContainer.innerHTML = '<p class="muted center">Carregando permissões…</p>';
+      try {
+        const res = await fetch('/api/permissions?role=' + encodeURIComponent(role));
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        items = data.items || [];
+        currentRole = data.role || role;
+        dirty = false;
+        render();
+      } catch (err) {
+        groupsContainer.innerHTML = '<p class="muted center">Erro ao carregar: ' + err.message + '</p>';
+      }
+    }
+
+    function render() {
+      const filter = (search.value || '').trim().toLowerCase();
+      const grouped = {};
+      for (const it of items) {
+        if (!grouped[it.group]) grouped[it.group] = [];
+        grouped[it.group].push(it);
+      }
+      const order = ['Navegação', 'Vendas', 'Custos', 'Ads', 'Recebíveis', 'Visualização'];
+      const html = [];
+      let totalShown = 0;
+      let onShown = 0;
+      for (const grp of order) {
+        if (!grouped[grp]) continue;
+        const filtered = grouped[grp].filter((p) =>
+          !filter || p.label.toLowerCase().includes(filter) || p.key.toLowerCase().includes(filter)
+        );
+        if (filtered.length === 0) continue;
+        const onCount = filtered.filter((p) => p.allowed).length;
+        totalShown += filtered.length;
+        onShown += onCount;
+        const groupAllOn = filtered.every((p) => p.allowed);
+        html.push(`<div class="perm-group" data-group="${escapeHtml(grp)}">`);
+        html.push('<div class="perm-group-head">');
+        html.push(`<h3><span class="perm-group-icon">${GROUP_ICONS[grp] || '·'}</span>${escapeHtml(grp)}</h3>`);
+        html.push('<div class="perm-group-meta">');
+        html.push(`<span><strong>${onCount}</strong> / ${filtered.length}</span>`);
+        html.push(`<label class="toggle"><input type="checkbox" data-group-toggle="${escapeHtml(grp)}" ${groupAllOn ? 'checked' : ''} /><span class="toggle-slider"></span></label>`);
+        html.push('</div></div>');
+        html.push('<div class="perm-group-body">');
+        for (const p of filtered) {
+          html.push('<div class="perm-row">');
+          html.push('<div class="perm-row-label">');
+          html.push(escapeHtml(p.label));
+          html.push(`<span class="perm-row-key">${escapeHtml(p.key)}</span>`);
+          html.push('</div>');
+          html.push(`<label class="toggle"><input type="checkbox" data-perm-key="${escapeHtml(p.key)}" ${p.allowed ? 'checked' : ''} /><span class="toggle-slider"></span></label>`);
+          html.push('</div>');
+        }
+        html.push('</div></div>');
+      }
+      if (totalShown === 0) {
+        groupsContainer.innerHTML = '<p class="muted center">Nenhuma permissão corresponde ao filtro.</p>';
+      } else {
+        groupsContainer.innerHTML = html.join('');
+      }
+      const totalAll = items.length;
+      const onAll = items.filter((p) => p.allowed).length;
+      summaryOn.textContent = onAll;
+      summaryTotal.textContent = totalAll;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function setStatus(text, cls) {
+      status.textContent = text;
+      status.className = 'permissions-status ' + (cls || '');
+    }
+
+    groupsContainer.addEventListener('change', (e) => {
+      const t = e.target;
+      if (t.matches('input[data-perm-key]')) {
+        const key = t.dataset.permKey;
+        const it = items.find((x) => x.key === key);
+        if (it) it.allowed = t.checked;
+        dirty = true;
+        render();
+      } else if (t.matches('input[data-group-toggle]')) {
+        const grp = t.dataset.groupToggle;
+        items.forEach((it) => {
+          if (it.group === grp) it.allowed = t.checked;
+        });
+        dirty = true;
+        render();
+      }
+    });
+
+    search.addEventListener('input', render);
+
+    saveBtn.addEventListener('click', async () => {
+      setStatus('salvando…', 'is-saving');
       try {
         const res = await fetch('/api/permissions', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ role: 'financeiro', updates }),
+          body: JSON.stringify({
+            role: currentRole,
+            updates: items.map((it) => ({ key: it.key, allowed: it.allowed })),
+          }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          permStatus.textContent = 'erro: ' + (err.error || res.status);
+          setStatus('erro: ' + (err.error || res.status), 'is-error');
           return;
         }
-        permStatus.textContent = '✔ salvo';
-        setTimeout(() => { permStatus.textContent = ''; }, 2500);
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        setStatus('salvo às ' + hh + ':' + mm, 'is-saved');
+        dirty = false;
       } catch (err) {
-        permStatus.textContent = 'erro: ' + err.message;
+        setStatus('erro: ' + err.message, 'is-error');
       }
     });
+
+    presetBtns.forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const preset = btn.dataset.preset;
+        const labels = {
+          'default': 'voltar a Rachel ao padrão do sistema',
+          'all-on': 'LIBERAR TODAS as permissões para a Rachel',
+          'all-off': 'BLOQUEAR todas as permissões (Rachel mantém só acesso à aba de Custos)',
+        };
+        if (preset === 'all-on' || preset === 'all-off') {
+          if (!confirm('Confirmar: ' + labels[preset] + '?')) return;
+        } else {
+          if (!confirm('Aplicar preset: ' + labels[preset] + '?')) return;
+        }
+        setStatus('aplicando preset…', 'is-saving');
+        try {
+          const res = await fetch('/api/permissions/preset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: currentRole, preset }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            setStatus('erro: ' + (err.error || res.status), 'is-error');
+            return;
+          }
+          const data = await res.json();
+          items = data.items || [];
+          dirty = false;
+          render();
+          setStatus('preset aplicado ✓', 'is-saved');
+        } catch (err) {
+          setStatus('erro: ' + err.message, 'is-error');
+        }
+      });
+    });
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        if (dirty && !confirm('Há mudanças não salvas. Trocar de role mesmo assim?')) return;
+        tabs.forEach((t) => t.classList.remove('is-active'));
+        tab.classList.add('is-active');
+        load(tab.dataset.role);
+      });
+    });
+
+    load(currentRole);
   }
 })();

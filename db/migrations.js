@@ -179,12 +179,20 @@ function runMigrations(db) {
       ('financeiro', 'action.edit_cost', 1),
       ('financeiro', 'action.delete_cost', 0),
       ('financeiro', 'action.add_recurring_cost', 1),
+      ('financeiro', 'action.edit_recurring_cost', 1),
+      ('financeiro', 'action.delete_recurring_cost', 0),
       ('financeiro', 'action.add_ads', 0),
       ('financeiro', 'action.edit_ads', 0),
       ('financeiro', 'action.delete_ads', 0),
+      ('financeiro', 'action.add_receivable', 1),
+      ('financeiro', 'action.edit_receivable', 1),
+      ('financeiro', 'action.mark_received', 1),
+      ('financeiro', 'action.delete_receivable', 0),
       ('financeiro', 'view.kpi_caixa', 0),
       ('financeiro', 'view.runway', 0),
-      ('financeiro', 'view.audit_log', 0);
+      ('financeiro', 'view.audit_log', 0),
+      ('financeiro', 'view.scenarios_list', 0),
+      ('financeiro', 'view.team', 1);
   `);
 
   addColumnIfMissing(db, 'costs', 'is_ads', 'INTEGER DEFAULT 0');

@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
   res.json(recurrence.list({ activeOnly: true }));
 });
 
-router.patch('/:id', requirePerm('action.add_recurring_cost'), (req, res) => {
+router.patch('/:id', requirePerm('action.edit_recurring_cost'), (req, res) => {
   const id = Number(req.params.id);
   const before = recurrence.getById(id);
   if (!before) return res.status(404).json({ error: 'regra não encontrada' });
@@ -53,7 +53,7 @@ router.patch('/:id', requirePerm('action.add_recurring_cost'), (req, res) => {
   res.json(updated);
 });
 
-router.delete('/:id', requirePerm('action.add_recurring_cost'), (req, res) => {
+router.delete('/:id', requirePerm('action.delete_recurring_cost'), (req, res) => {
   const id = Number(req.params.id);
   const before = recurrence.getById(id);
   if (!before) return res.status(404).json({ error: 'regra não encontrada' });

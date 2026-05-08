@@ -4,6 +4,7 @@ const receivables = require('../../db/queries/receivables');
 const sales = require('../../db/queries/sales');
 const { audit } = require('../../lib/audit');
 const { isDateInRange, isPositive, isNonNegative, MIN_DATE, MAX_DATE } = require('../../lib/validators');
+const { requirePerm } = require('../../lib/permissions');
 
 const DATE_ERR = `date deve ser entre ${MIN_DATE} e ${MAX_DATE} (YYYY-MM-DD)`;
 
@@ -12,7 +13,7 @@ router.get('/', (req, res) => {
   res.json(receivables.list({ status: status || null, from: from || null, to: to || null }));
 });
 
-router.post('/', (req, res) => {
+router.post('/', requirePerm('action.add_receivable'), (req, res) => {
   const b = req.body || {};
   if (!isDateInRange(b.expected_date)) return res.status(400).json({ error: 'expected_date: ' + DATE_ERR });
   if (!isPositive(b.expected_amount)) return res.status(400).json({ error: 'expected_amount deve ser > 0' });
@@ -68,7 +69,7 @@ router.post('/sale-with-installments', (req, res) => {
   res.status(201).json(result);
 });
 
-router.patch('/:id', (req, res) => {
+router.patch('/:id', requirePerm('action.edit_receivable'), (req, res) => {
   const id = Number(req.params.id);
   const before = receivables.getById(id);
   if (!before) return res.status(404).json({ error: 'recebível não encontrado' });
@@ -89,7 +90,7 @@ router.patch('/:id', (req, res) => {
   res.json(updated);
 });
 
-router.post('/:id/mark-received', (req, res) => {
+router.post('/:id/mark-received', requirePerm('action.mark_received'), (req, res) => {
   const id = Number(req.params.id);
   const before = receivables.getById(id);
   if (!before) return res.status(404).json({ error: 'recebível não encontrado' });
@@ -119,7 +120,7 @@ router.post('/:id/mark-received', (req, res) => {
   res.json(result);
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requirePerm('action.delete_receivable'), (req, res) => {
   const id = Number(req.params.id);
   const before = receivables.getById(id);
   if (!before) return res.status(404).json({ error: 'recebível não encontrado' });
