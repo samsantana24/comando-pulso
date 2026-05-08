@@ -319,6 +319,11 @@
   </form>
 </dialog>
 
+<script>window.FUNNEL_BOOTSTRAP = <%- JSON.stringify({
+  scenarioId: activeScenario.id,
+  evolutiveEnabled: !!evolutiveEnabled,
+  weeksCount: evolutiveWeeks,
+}) %>;</script>
 <% if (!evolutiveEnabled) { %>
 <script src="/js/funil.js?v=<%= assetVersion %>"></script>
 <% } else { %>
@@ -329,6 +334,6 @@
   teamWeekly,
   team: allTeam.map((m) => ({ id: m.id, name: m.name, role: m.role })),
 }) %>;</script>
-<script src="/js/funil-evolutivo.js?v=<%= assetVersion %>"></script>
 <% } %>
+<script src="/js/funil-evolutivo.js?v=<%= assetVersion %>"></script>
 <%- include('partials/footer') %>
