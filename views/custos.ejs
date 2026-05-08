@@ -23,6 +23,8 @@
     </div>
   </section>
 
+  <%- include('partials/data-entry', { closers: closers, activeScenario: activeScenario, today: today, categoriesByGroup: categoriesByGroup }) %>
+
   <section class="weekly-grid-wrap">
     <table class="weekly-grid">
       <thead>
@@ -187,195 +189,6 @@
   </section>
 </main>
 
-<datalist id="categorias-list">
-  <% for (const [grp, items] of Object.entries(categoriesByGroup)) { %>
-    <% for (const item of items) { %>
-      <option value="<%= item %>"><%= grp %></option>
-    <% } %>
-  <% } %>
-</datalist>
-
-<dialog id="modal-venda" class="modal">
-  <form class="api-form" data-endpoint="/api/sales" data-method="POST" id="form-venda">
-    <h2>Nova venda</h2>
-
-    <div class="venda-mode-toggle">
-      <label class="radio-label"><input type="radio" name="venda_mode" value="paid" checked /> 100% paga hoje</label>
-      <label class="radio-label"><input type="radio" name="venda_mode" value="installments" /> Parcelada</label>
-    </div>
-
-    <label class="form-label">Data
-      <input type="date" name="date" value="<%= today %>" required />
-    </label>
-    <div class="form-row">
-      <label class="form-label">Valor bruto (R$)
-        <input type="number" name="gross_amount" step="0.01" min="0" required />
-      </label>
-      <label class="form-label">Valor líquido (R$) <span class="muted">(parte paga hoje)</span>
-        <input type="number" name="net_amount" step="0.01" min="0" required />
-      </label>
-    </div>
-    <label class="form-label">Cliente
-      <input type="text" name="client_name" placeholder="Opcional" />
-    </label>
-    <div class="form-row">
-      <label class="form-label">Closer
-        <select name="closer_id">
-          <option value="">—</option>
-          <% for (const c of closers) { %>
-            <option value="<%= c.id %>"><%= c.name %></option>
-          <% } %>
-        </select>
-      </label>
-      <label class="form-label">Pagamento
-        <select name="payment_method">
-          <option value="">—</option>
-          <option value="pix">Pix</option>
-          <option value="cartao_avista">Cartão à vista</option>
-          <option value="cartao_2x">Cartão 2x</option>
-          <option value="cartao_6x">Cartão 6x</option>
-          <option value="cartao_12x">Cartão 12x</option>
-          <option value="outro">Outro</option>
-        </select>
-      </label>
-    </div>
-    <label class="form-label">Observações
-      <textarea name="notes" rows="2"></textarea>
-    </label>
-
-    <div id="installments-block" hidden>
-      <h3>Parcelas futuras</h3>
-      <table class="installments-table">
-        <thead>
-          <tr><th>Data prevista</th><th class="num">Valor</th><th>Pagamento</th><th></th></tr>
-        </thead>
-        <tbody id="installments-tbody"></tbody>
-      </table>
-      <button type="button" class="btn btn-ghost btn-small" id="btn-add-installment">+ Adicionar parcela</button>
-      <p class="muted installments-summary" id="installments-summary"></p>
-    </div>
-
-    <div class="modal-actions">
-      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
-      <button type="submit" class="btn btn-primary">Salvar venda</button>
-    </div>
-  </form>
-</dialog>
-
-<dialog id="modal-custo" class="modal">
-  <form class="api-form" data-endpoint="/api/costs" data-method="POST">
-    <h2>Novo custo</h2>
-    <div class="form-row">
-      <label class="form-label">Data
-        <input type="date" name="date" value="<%= today %>" required />
-      </label>
-      <label class="form-label">Valor (R$)
-        <input type="number" name="amount" step="0.01" min="0" required />
-      </label>
-    </div>
-    <label class="form-label">Categoria
-      <input list="categorias-list" name="category" required placeholder="Selecione ou digite uma nova" />
-    </label>
-    <label class="form-label">Descrição
-      <input type="text" name="description" />
-    </label>
-    <div class="form-row">
-      <label class="form-label">Status
-        <select name="status">
-          <option value="planned">Previsto</option>
-          <option value="paid">Pago</option>
-        </select>
-      </label>
-      <label class="form-label">Cenário
-        <select name="scenario_id">
-          <option value="">Realidade (todos cenários)</option>
-          <% if (activeScenario) { %>
-            <option value="<%= activeScenario.id %>">Apenas neste (<%= activeScenario.name %>)</option>
-          <% } %>
-        </select>
-      </label>
-    </div>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
-      <button type="submit" class="btn btn-primary">Salvar custo</button>
-    </div>
-  </form>
-</dialog>
-
-<dialog id="modal-recorrente" class="modal">
-  <form class="api-form" data-endpoint="/api/costs" data-method="POST">
-    <input type="hidden" name="is_recurring" value="true" />
-    <h2>Custo recorrente</h2>
-    <label class="form-label">Categoria
-      <input list="categorias-list" name="category" required />
-    </label>
-    <label class="form-label">Descrição
-      <input type="text" name="description" />
-    </label>
-    <label class="form-label">Valor base (R$)
-      <input type="number" name="amount" step="0.01" min="0" required />
-    </label>
-    <div class="form-row">
-      <label class="form-label">Padrão
-        <select name="recurrence_pattern">
-          <option value="monthly_day">Mensal (dia X)</option>
-          <option value="every_n_weeks">A cada N semanas</option>
-        </select>
-      </label>
-      <label class="form-label">
-        <span id="recurrence-value-label">Dia do mês (1-31)</span>
-        <input type="number" name="recurrence_value" min="1" max="31" value="5" required />
-      </label>
-    </div>
-    <div class="form-row">
-      <label class="form-label">Início
-        <input type="date" name="recurrence_start" value="<%= today %>" required />
-      </label>
-      <label class="form-label">Fim (opcional)
-        <input type="date" name="recurrence_end" />
-      </label>
-    </div>
-    <label class="form-label">Cenário
-      <select name="scenario_id">
-        <option value="">Realidade (todos cenários)</option>
-        <% if (activeScenario) { %>
-          <option value="<%= activeScenario.id %>">Apenas neste (<%= activeScenario.name %>)</option>
-        <% } %>
-      </select>
-    </label>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
-      <button type="submit" class="btn btn-primary">Criar recorrência</button>
-    </div>
-  </form>
-</dialog>
-
-<dialog id="modal-ads" class="modal">
-  <form id="form-ads">
-    <h2>Investimento em Ads (semanal)</h2>
-    <p class="muted">O valor será dividido em 7 dias da semana (dom→sáb). Lançar de novo na mesma semana sobrescreve.</p>
-    <label class="form-label">Semana (qualquer data dentro dela)
-      <input type="date" name="week_start_date" value="<%= today %>" required />
-    </label>
-    <label class="form-label">Valor da semana (R$)
-      <input type="number" name="total_amount" step="0.01" min="0" required />
-    </label>
-    <p class="ads-preview muted" id="ads-preview"></p>
-    <label class="form-label">Cenário
-      <select name="scenario_id">
-        <option value="">Realidade (todos cenários)</option>
-        <% if (activeScenario) { %>
-          <option value="<%= activeScenario.id %>">Apenas neste (<%= activeScenario.name %>)</option>
-        <% } %>
-      </select>
-    </label>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
-      <button type="submit" class="btn btn-primary">Salvar investimento</button>
-    </div>
-  </form>
-</dialog>
-
 <dialog id="modal-edit-sale" class="modal">
   <form class="api-form" data-endpoint="" data-method="PATCH">
     <h2>Editar venda</h2>
@@ -472,5 +285,6 @@
   </form>
 </dialog>
 
+<script src="/js/data-entry.js?v=<%= assetVersion %>"></script>
 <script src="/js/custos.js?v=<%= assetVersion %>"></script>
 <%- include('partials/footer') %>

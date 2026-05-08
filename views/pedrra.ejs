@@ -3,6 +3,8 @@
 
 <main class="container pedrra">
 
+  <%- include('partials/data-entry', { closers: closers, activeScenario: activeScenario, today: today, categoriesByGroup: categoriesByGroup }) %>
+
   <% if (upcomingReceivables.length > 0) { %>
     <div class="alert alert-warn upcoming-receivables">
       <strong>⚠ <%= upcomingReceivables.length %> recebível(is) vencendo nos próximos 7 dias</strong>
@@ -96,5 +98,6 @@
     visibleScenarioIds: visibleScenarioIds,
   }) %>;
 </script>
+<script src="/js/data-entry.js?v=<%= assetVersion %>"></script>
 <script src="/js/pedrra.js?v=<%= assetVersion %>"></script>
 <%- include('partials/footer') %>

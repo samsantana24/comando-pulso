@@ -4,6 +4,8 @@ const cashflow = require('../lib/cashflow');
 const scenarios = require('../db/queries/scenarios');
 const receivables = require('../db/queries/receivables');
 const settings = require('../db/queries/settings');
+const team = require('../db/queries/team');
+const categories = require('../db/queries/categories');
 const { todayYmd, ymd } = require('../lib/weeks');
 
 router.get('/', requireAuth, requireMaster, requireTotp, (req, res) => {
@@ -33,6 +35,13 @@ router.get('/', requireAuth, requireMaster, requireTotp, (req, res) => {
     if (!Array.isArray(visibleScenarioIds)) visibleScenarioIds = [];
   } catch (_) { visibleScenarioIds = []; }
 
+  const closers = team.list({ role: 'closer' });
+  const allCategoriesGrouped = {};
+  for (const c of categories.list()) {
+    if (!allCategoriesGrouped[c.group_name]) allCategoriesGrouped[c.group_name] = [];
+    allCategoriesGrouped[c.group_name].push(c.name);
+  }
+
   res.render('pedrra', {
     title: 'PEDRRA',
     user: req.user,
@@ -47,6 +56,9 @@ router.get('/', requireAuth, requireMaster, requireTotp, (req, res) => {
     upcomingReceivables,
     upcomingReceivablesTotal: upcomingTotal,
     visibleScenarioIds,
+    closers,
+    today,
+    categoriesByGroup: allCategoriesGrouped,
   });
 });
 
