@@ -2127,3 +2127,78 @@ body.values-hidden .kpi-card-value::after { content: ''; }
 .future-table tbody tr:hover { background: rgba(255,255,255,0.02); }
 .future-table .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .future-table .btn-link.pos { color: var(--pos); }
+
+/* === Tabela split paid/planned (ONDA 6 Fase B) === */
+.weekly-grid-split { font-variant-numeric: tabular-nums; }
+.weekly-grid-split thead th.status-h {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.015);
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+}
+.weekly-grid-split thead th.paid-h { color: var(--pos); }
+.weekly-grid-split thead th.planned-h { color: var(--warn); border-right: 1px solid var(--line); }
+.weekly-grid-split thead th.week-h {
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  border-right: 1px solid var(--line);
+}
+.weekly-grid-split td.cell-paid {
+  background: rgba(34, 197, 94, 0.025);
+  text-align: right; padding: 10px 12px;
+  position: relative;
+}
+.weekly-grid-split td.cell-planned {
+  background: rgba(255, 165, 0, 0.025);
+  text-align: right; padding: 10px 12px;
+  border-right: 1px solid var(--line);
+  position: relative;
+}
+.weekly-grid-split td.cell-paid.has-value { color: var(--pos); font-weight: 600; }
+.weekly-grid-split td.cell-planned.has-value { color: var(--warn); font-weight: 600; }
+.weekly-grid-split tr.row-saldo td.cell-paid.has-value.pos { color: var(--pos); }
+.weekly-grid-split tr.row-saldo td.cell-paid.has-value.neg { color: var(--neg); }
+.weekly-grid-split tr.row-saldo td.cell-planned.has-value.neg { color: var(--neg); }
+.weekly-grid-split tr.row-vendas td.cell-planned { color: var(--muted); }
+
+.cell-actions {
+  display: none; margin-left: 6px;
+  vertical-align: middle;
+}
+.cell-paid:hover .cell-actions,
+.cell-planned:hover .cell-actions { display: inline-flex; gap: 4px; }
+.cell-action-btn {
+  border: 0; background: transparent;
+  color: var(--muted); padding: 2px 6px;
+  border-radius: 4px; font-size: 11px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-pulso);
+}
+.cell-action-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--fg); }
+.cell-action-btn.pay { color: var(--pos); }
+.cell-action-btn.pay:hover { background: var(--pos-soft); }
+.cell-action-btn.revert { color: var(--warn); }
+.cell-action-btn.revert:hover { background: rgba(255, 165, 0, 0.12); }
+.cell-action-btn.delete { color: var(--neg); }
+.cell-action-btn.delete:hover { background: var(--neg-soft); }
+
+.mark-paid-list {
+  max-height: 320px; overflow-y: auto;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.mark-paid-item {
+  display: grid;
+  grid-template-columns: auto 80px 1fr auto;
+  gap: 12px; align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+}
+.mark-paid-item:last-child { border-bottom: 0; }
+.mark-paid-item:hover { background: rgba(255, 255, 255, 0.02); }
+.mark-paid-item-date { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.mark-paid-item-desc { font-size: 13px; color: var(--fg); }
+.mark-paid-item-amount { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--warn); }

@@ -36,47 +36,80 @@ router.get('/', requireAuth, requireTotp, (req, res) => {
   for (const g of GROUP_ORDER) orderedGroups.push(g);
 
   const costsByGroup = {};
-  const costsByCatWeek = {};
+  const costsByGroupPaid = {};
+  const costsByGroupPlanned = {};
+  const costIdsByGroupCatWeek = {};
   for (const c of nonAdsCosts) {
     const wid = weekIdFromSunday(weekRangeFromDate(c.date).sun);
     if (!(wid in salesByWeek)) continue;
     const group = catToGroup.get(c.category) || 'Outros Custos';
+    const amount = Number(c.amount || 0);
+    const target = c.status === 'paid' ? costsByGroupPaid : costsByGroupPlanned;
     if (!costsByGroup[group]) costsByGroup[group] = {};
     if (!costsByGroup[group][c.category]) costsByGroup[group][c.category] = {};
-    if (!costsByGroup[group][c.category][wid]) costsByGroup[group][c.category][wid] = 0;
-    costsByGroup[group][c.category][wid] += Number(c.amount || 0);
+    costsByGroup[group][c.category][wid] = (costsByGroup[group][c.category][wid] || 0) + amount;
+    if (!target[group]) target[group] = {};
+    if (!target[group][c.category]) target[group][c.category] = {};
+    target[group][c.category][wid] = (target[group][c.category][wid] || 0) + amount;
 
-    if (!costsByCatWeek[c.category]) costsByCatWeek[c.category] = {};
-    costsByCatWeek[c.category][wid] = (costsByCatWeek[c.category][wid] || 0) + Number(c.amount || 0);
+    if (!costIdsByGroupCatWeek[group]) costIdsByGroupCatWeek[group] = {};
+    if (!costIdsByGroupCatWeek[group][c.category]) costIdsByGroupCatWeek[group][c.category] = {};
+    if (!costIdsByGroupCatWeek[group][c.category][wid]) costIdsByGroupCatWeek[group][c.category][wid] = { paid: [], planned: [] };
+    costIdsByGroupCatWeek[group][c.category][wid][c.status === 'paid' ? 'paid' : 'planned'].push(c.id);
   }
 
   const adsByWeek = {};
-  for (const w of weeks) adsByWeek[w.week_id] = 0;
+  const adsPaidByWeek = {};
+  const adsPlannedByWeek = {};
+  for (const w of weeks) { adsByWeek[w.week_id] = 0; adsPaidByWeek[w.week_id] = 0; adsPlannedByWeek[w.week_id] = 0; }
   for (const c of adsCosts) {
     const wid = weekIdFromSunday(weekRangeFromDate(c.date).sun);
-    if (wid in adsByWeek) adsByWeek[wid] += Number(c.amount || 0);
+    if (!(wid in adsByWeek)) continue;
+    const amount = Number(c.amount || 0);
+    adsByWeek[wid] += amount;
+    if (c.status === 'paid') adsPaidByWeek[wid] += amount;
+    else adsPlannedByWeek[wid] += amount;
   }
 
   const subtotalByGroupWeek = {};
+  const subtotalByGroupPaid = {};
+  const subtotalByGroupPlanned = {};
   for (const group of Object.keys(costsByGroup)) {
     subtotalByGroupWeek[group] = {};
+    subtotalByGroupPaid[group] = {};
+    subtotalByGroupPlanned[group] = {};
     for (const w of weeks) {
-      let s = 0;
+      let total = 0, paid = 0, planned = 0;
       for (const cat of Object.keys(costsByGroup[group])) {
-        s += costsByGroup[group][cat][w.week_id] || 0;
+        total += costsByGroup[group][cat][w.week_id] || 0;
+        paid += (costsByGroupPaid[group] && costsByGroupPaid[group][cat] && costsByGroupPaid[group][cat][w.week_id]) || 0;
+        planned += (costsByGroupPlanned[group] && costsByGroupPlanned[group][cat] && costsByGroupPlanned[group][cat][w.week_id]) || 0;
       }
-      subtotalByGroupWeek[group][w.week_id] = s;
+      subtotalByGroupWeek[group][w.week_id] = total;
+      subtotalByGroupPaid[group][w.week_id] = paid;
+      subtotalByGroupPlanned[group][w.week_id] = planned;
     }
   }
 
   const balanceByWeek = {};
+  const balanceByWeekSplit = {};
   for (const w of weeks) {
-    let costsTotal = 0;
+    let costsTotal = 0, costsPaid = 0, costsPlanned = 0;
     for (const group of Object.keys(costsByGroup)) {
       costsTotal += subtotalByGroupWeek[group][w.week_id] || 0;
+      costsPaid += subtotalByGroupPaid[group][w.week_id] || 0;
+      costsPlanned += subtotalByGroupPlanned[group][w.week_id] || 0;
     }
     costsTotal += adsByWeek[w.week_id] || 0;
-    balanceByWeek[w.week_id] = (salesByWeek[w.week_id] || 0) - costsTotal;
+    costsPaid += adsPaidByWeek[w.week_id] || 0;
+    costsPlanned += adsPlannedByWeek[w.week_id] || 0;
+    const sales = salesByWeek[w.week_id] || 0;
+    balanceByWeek[w.week_id] = sales - costsTotal;
+    balanceByWeekSplit[w.week_id] = {
+      paid: sales - costsPaid,
+      planned: -costsPlanned,
+      total: sales - costsTotal,
+    };
   }
 
   const recentSales = sales.list({ limit: 12 });
@@ -115,11 +148,18 @@ router.get('/', requireAuth, requireTotp, (req, res) => {
     weeks,
     salesByWeek,
     costsByGroup,
+    costsByGroupPaid,
+    costsByGroupPlanned,
     subtotalByGroupWeek,
+    subtotalByGroupPaid,
+    subtotalByGroupPlanned,
     orderedGroupsPresent,
     adsByWeek,
+    adsPaidByWeek,
+    adsPlannedByWeek,
     adsByWeekRows,
     balanceByWeek,
+    balanceByWeekSplit,
     recentSales,
     recentCosts,
     pendingReceivables,

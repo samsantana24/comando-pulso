@@ -403,4 +403,131 @@
       el.value = payload[k] == null ? '' : payload[k];
     }
   }
+
+  function todayYmdGlobal() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function fmtDateShort(ymd) {
+    if (!ymd) return '';
+    const [y, m, d] = ymd.split('-');
+    return d + '/' + m + '/' + y.slice(2);
+  }
+  function escapeHtmlGlobal(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // === Modal Marcar como pago ===
+  const markPaidDlg = document.getElementById('modal-mark-paid');
+  if (markPaidDlg) {
+    const form = document.getElementById('form-mark-paid');
+    const listEl = document.getElementById('mark-paid-list');
+    const summaryEl = document.getElementById('mark-paid-summary');
+    let pendingCosts = [];
+
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-action="mark-paid"]');
+      if (!btn) return;
+      e.preventDefault();
+      const category = btn.dataset.category;
+      const group = btn.dataset.group;
+      const fromDate = btn.dataset.weekStart;
+      const toDate = btn.dataset.weekEnd;
+
+      summaryEl.textContent = `${category} · ${group} · carregando…`;
+      listEl.innerHTML = '<p class="muted center" style="padding: 24px;">Carregando custos…</p>';
+      form.elements.paid_date.value = todayYmdGlobal();
+      markPaidDlg.showModal();
+
+      const params = new URLSearchParams({ from: fromDate, to: toDate, status: 'planned' });
+      try {
+        const res = await fetch('/api/costs?' + params);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const all = await res.json();
+        pendingCosts = all.filter((c) => c.category === category && Number(c.is_ads || 0) === 0);
+      } catch (err) {
+        listEl.innerHTML = '<p class="muted center" style="padding: 24px;">Erro: ' + escapeHtmlGlobal(err.message) + '</p>';
+        return;
+      }
+
+      summaryEl.textContent = `${category} · ${group} · ${pendingCosts.length} custo(s) pendente(s)`;
+      if (pendingCosts.length === 0) {
+        listEl.innerHTML = '<p class="muted center" style="padding: 24px;">Nenhum custo pendente nesta semana.</p>';
+        return;
+      }
+      listEl.innerHTML = pendingCosts.map((c) => `
+        <label class="mark-paid-item">
+          <input type="checkbox" name="cost_${c.id}" value="${c.id}" checked />
+          <span class="mark-paid-item-date">${fmtDateShort(c.date)}</span>
+          <span class="mark-paid-item-desc">${escapeHtmlGlobal(c.description || '—')}</span>
+          <span class="mark-paid-item-amount">${BRL.format(Number(c.amount))}</span>
+        </label>
+      `).join('');
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const paidDate = form.elements.paid_date.value;
+      const checked = [...listEl.querySelectorAll('input[type="checkbox"]:checked')].map((cb) => Number(cb.value));
+      if (checked.length === 0) { window.toast('Selecione ao menos 1 custo'); return; }
+      if (!paidDate) { window.toast('Informe a data'); return; }
+
+      const btn = document.getElementById('btn-confirm-paid');
+      btn.dataset.loading = '1';
+      btn.disabled = true;
+      try {
+        await Promise.all(checked.map((id) =>
+          fetch('/api/costs/' + id, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'paid', date: paidDate }),
+          }).then((r) => { if (!r.ok) throw new Error('Falha em #' + id); })
+        ));
+        window.toast(checked.length + ' custo(s) marcados como pagos ✓');
+        markPaidDlg.close();
+        setTimeout(() => location.reload(), 500);
+      } catch (err) {
+        window.toast('Erro: ' + err.message);
+      } finally {
+        delete btn.dataset.loading;
+        btn.disabled = false;
+      }
+    });
+  }
+
+  // === Reverter para 'a pagar' ===
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action="revert-paid"]');
+    if (!btn) return;
+    e.preventDefault();
+    const category = btn.dataset.category;
+    const fromDate = btn.dataset.weekStart;
+    const toDate = btn.dataset.weekEnd;
+    const params = new URLSearchParams({ from: fromDate, to: toDate, status: 'paid' });
+    let paidCosts = [];
+    try {
+      const res = await fetch('/api/costs?' + params);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const all = await res.json();
+      paidCosts = all.filter((c) => c.category === category && Number(c.is_ads || 0) === 0);
+    } catch (err) {
+      window.toast('Erro: ' + err.message);
+      return;
+    }
+    if (paidCosts.length === 0) { window.toast('Nenhum custo pago nessa célula'); return; }
+    if (!confirm('Reverter ' + paidCosts.length + ' custo(s) de "pago" para "a pagar"?')) return;
+    try {
+      await Promise.all(paidCosts.map((c) =>
+        fetch('/api/costs/' + c.id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'planned' }),
+        }).then((r) => { if (!r.ok) throw new Error('Falha em #' + c.id); })
+      ));
+      window.toast(paidCosts.length + ' custo(s) revertidos');
+      setTimeout(() => location.reload(), 500);
+    } catch (err) {
+      window.toast('Erro: ' + err.message);
+    }
+  });
 })();

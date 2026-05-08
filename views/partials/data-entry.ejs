@@ -266,6 +266,27 @@
   </form>
 </dialog>
 
+<dialog id="modal-mark-paid" class="modal">
+  <form id="form-mark-paid">
+    <h2>Marcar como pago</h2>
+    <p class="muted" id="mark-paid-summary">—</p>
+
+    <div id="mark-paid-list" class="mark-paid-list">
+      <p class="muted center" style="padding: 24px;">Carregando custos…</p>
+    </div>
+
+    <label class="form-label">Data do pagamento *
+      <input type="date" name="paid_date" required />
+    </label>
+    <p class="muted small">A data de cada custo selecionado será atualizada para a data do pagamento.</p>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary" id="btn-confirm-paid">Confirmar pagamento</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="modal-todos-futuros" class="modal modal-wide">
   <div class="modal-head">
     <h2>Todos os custos futuros</h2>

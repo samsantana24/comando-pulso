@@ -51,15 +51,21 @@
   <%- include('partials/data-entry', { closers: closers, activeScenario: activeScenario, today: today, categoriesByGroup: categoriesByGroup, scenarios: locals.scenarios }) %>
 
   <section class="weekly-grid-wrap">
-    <table class="weekly-grid">
+    <table class="weekly-grid weekly-grid-split">
       <thead>
-        <tr>
-          <th>Categoria</th>
+        <tr class="week-row">
+          <th rowspan="2" class="cat-col">Categoria</th>
           <% for (const w of weeks) { %>
-            <th class="week-h <%= w.is_current ? 'current' : (w.is_past ? 'past' : 'future') %>">
+            <th colspan="2" class="week-h <%= w.is_current ? 'current' : (w.is_past ? 'past' : 'future') %>">
               <div class="week-label"><%= w.label %></div>
               <div class="week-id"><%= w.week_id %></div>
             </th>
+          <% } %>
+        </tr>
+        <tr class="status-row">
+          <% for (const w of weeks) { %>
+            <th class="status-h paid-h">PAGO</th>
+            <th class="status-h planned-h">A PAGAR</th>
           <% } %>
         </tr>
       </thead>
@@ -68,60 +74,97 @@
           <td>Vendas (líquido)</td>
           <% for (const w of weeks) { %>
             <% const v = salesByWeek[w.week_id] || 0 %>
-            <td class="amount <%= v > 0 ? 'pos' : '' %>"><%= v ? formatBrl(v) : '—' %></td>
+            <td class="num cell-paid <%= v > 0 ? 'has-value pos' : '' %>"><%= v ? formatBrl(v) : '—' %></td>
+            <td class="num cell-planned">—</td>
           <% } %>
         </tr>
 
         <tr class="row-section ads-section">
-          <td colspan="<%= weeks.length + 1 %>">— INVESTIMENTO EM ADS —</td>
+          <td colspan="<%= weeks.length * 2 + 1 %>">— INVESTIMENTO EM ADS —</td>
         </tr>
         <tr class="row-ads">
           <td>Tráfego Pago (Google / Meta Ads)</td>
           <% for (const w of weeks) { %>
-            <% const v = adsByWeek[w.week_id] || 0 %>
-            <td class="amount ads <%= v > 0 ? 'has' : '' %>">
-              <% if (v > 0) { %>
-                <span class="ads-value"><%= formatBrl(v) %></span>
-                <span class="ads-actions">
-                  <% if (userCan('action.edit_ads')) { %>
-                    <button type="button" class="btn-icon-mini" title="Editar ads desta semana" data-action="edit-ads-week" data-week-start="<%= w.sun %>" data-week-id="<%= w.week_id %>" data-amount="<%= v %>">✎</button>
-                  <% } %>
-                  <% if (userCan('action.delete_ads')) { %>
-                    <button type="button" class="btn-icon-mini danger" title="Remover ads desta semana" data-action="delete-ads-week" data-week-start="<%= w.sun %>" data-week-id="<%= w.week_id %>" data-amount="<%= v %>">×</button>
-                  <% } %>
-                </span>
-              <% } else { %>
-                —
-              <% } %>
+            <% const paidV = adsPaidByWeek[w.week_id] || 0 %>
+            <% const plannedV = adsPlannedByWeek[w.week_id] || 0 %>
+            <% const totalV = (adsByWeek[w.week_id] || 0) %>
+            <td class="num cell-paid <%= paidV > 0 ? 'has-value' : '' %>">
+              <% if (paidV > 0) { %>
+                <span class="cell-value"><%= formatBrl(paidV) %></span>
+                <% if (userCan('action.edit_ads') || userCan('action.delete_ads')) { %>
+                  <span class="cell-actions">
+                    <% if (userCan('action.edit_ads')) { %>
+                      <button type="button" class="cell-action-btn" title="Editar ads desta semana" data-action="edit-ads-week" data-week-start="<%= w.sun %>" data-week-id="<%= w.week_id %>" data-amount="<%= totalV %>">✎</button>
+                    <% } %>
+                    <% if (userCan('action.delete_ads')) { %>
+                      <button type="button" class="cell-action-btn delete" title="Remover ads desta semana" data-action="delete-ads-week" data-week-start="<%= w.sun %>" data-week-id="<%= w.week_id %>" data-amount="<%= totalV %>">×</button>
+                    <% } %>
+                  </span>
+                <% } %>
+              <% } else { %>—<% } %>
+            </td>
+            <td class="num cell-planned <%= plannedV > 0 ? 'has-value' : '' %>">
+              <% if (plannedV > 0) { %>
+                <span class="cell-value"><%= formatBrl(plannedV) %></span>
+                <% if (userCan('action.edit_ads')) { %>
+                  <span class="cell-actions">
+                    <button type="button" class="cell-action-btn" title="Editar ads desta semana" data-action="edit-ads-week" data-week-start="<%= w.sun %>" data-week-id="<%= w.week_id %>" data-amount="<%= totalV %>">✎</button>
+                  </span>
+                <% } %>
+              <% } else { %>—<% } %>
             </td>
           <% } %>
         </tr>
         <tr class="row-subtotal ads-subtotal">
           <td>Total Ads na semana</td>
           <% for (const w of weeks) { %>
-            <% const v = adsByWeek[w.week_id] || 0 %>
-            <td class="amount ads"><%= formatBrl(v) %></td>
+            <% const paidV = adsPaidByWeek[w.week_id] || 0 %>
+            <% const plannedV = adsPlannedByWeek[w.week_id] || 0 %>
+            <td class="num cell-paid <%= paidV > 0 ? 'has-value' : '' %>"><%= paidV > 0 ? formatBrl(paidV) : '—' %></td>
+            <td class="num cell-planned <%= plannedV > 0 ? 'has-value' : '' %>"><%= plannedV > 0 ? formatBrl(plannedV) : '—' %></td>
           <% } %>
         </tr>
 
         <% for (const grp of orderedGroupsPresent) { %>
           <tr class="row-section">
-            <td colspan="<%= weeks.length + 1 %>"><%= grp %></td>
+            <td colspan="<%= weeks.length * 2 + 1 %>"><%= grp %></td>
           </tr>
           <% for (const cat of Object.keys(costsByGroup[grp]).sort()) { %>
             <tr>
               <td><%= cat %></td>
               <% for (const w of weeks) { %>
-                <% const v = (costsByGroup[grp][cat] && costsByGroup[grp][cat][w.week_id]) || 0 %>
-                <td class="amount <%= v > 0 ? 'cost' : '' %>"><%= v ? formatBrl(v) : '—' %></td>
+                <% const paidV = (costsByGroupPaid[grp] && costsByGroupPaid[grp][cat] && costsByGroupPaid[grp][cat][w.week_id]) || 0 %>
+                <% const plannedV = (costsByGroupPlanned[grp] && costsByGroupPlanned[grp][cat] && costsByGroupPlanned[grp][cat][w.week_id]) || 0 %>
+                <td class="num cell-paid <%= paidV > 0 ? 'has-value' : '' %>">
+                  <% if (paidV > 0) { %>
+                    <span class="cell-value"><%= formatBrl(paidV) %></span>
+                    <% if (userCan('action.edit_cost')) { %>
+                      <span class="cell-actions">
+                        <button type="button" class="cell-action-btn revert" data-action="revert-paid" data-week="<%= w.week_id %>" data-week-start="<%= w.sun %>" data-week-end="<%= w.sat %>" data-category="<%= cat %>" data-group="<%= grp %>" title="Reverter para 'a pagar'">↩</button>
+                      </span>
+                    <% } %>
+                  <% } else { %>—<% } %>
+                </td>
+                <td class="num cell-planned <%= plannedV > 0 ? 'has-value' : '' %>">
+                  <% if (plannedV > 0) { %>
+                    <span class="cell-value"><%= formatBrl(plannedV) %></span>
+                    <% if (userCan('action.edit_cost')) { %>
+                      <span class="cell-actions">
+                        <button type="button" class="cell-action-btn pay" data-action="mark-paid" data-week="<%= w.week_id %>" data-week-start="<%= w.sun %>" data-week-end="<%= w.sat %>" data-category="<%= cat %>" data-group="<%= grp %>" title="Marcar como pago">✓</button>
+                      </span>
+                    <% } %>
+                  <% } else { %>—<% } %>
+                </td>
               <% } %>
             </tr>
           <% } %>
           <tr class="row-subtotal">
             <td>Subtotal <%= grp %></td>
             <% for (const w of weeks) { %>
-              <% const v = (subtotalByGroupWeek[grp] && subtotalByGroupWeek[grp][w.week_id]) || 0 %>
-              <td class="amount cost"><%= formatBrl(v) %></td>
+              <% const paidV = (subtotalByGroupPaid[grp] && subtotalByGroupPaid[grp][w.week_id]) || 0 %>
+              <% const plannedV = (subtotalByGroupPlanned[grp] && subtotalByGroupPlanned[grp][w.week_id]) || 0 %>
+              <td class="num cell-paid <%= paidV > 0 ? 'has-value' : '' %>"><%= paidV > 0 ? formatBrl(paidV) : '—' %></td>
+              <td class="num cell-planned <%= plannedV > 0 ? 'has-value' : '' %>"><%= plannedV > 0 ? formatBrl(plannedV) : '—' %></td>
             <% } %>
           </tr>
         <% } %>
@@ -129,8 +172,9 @@
         <tr class="row-saldo">
           <td>Saldo da semana</td>
           <% for (const w of weeks) { %>
-            <% const b = balanceByWeek[w.week_id] || 0 %>
-            <td class="amount <%= b > 0 ? 'pos' : (b < 0 ? 'neg' : '') %>"><%= formatBrl(b) %></td>
+            <% const split = balanceByWeekSplit[w.week_id] || { paid: 0, planned: 0 } %>
+            <td class="num cell-paid has-value <%= split.paid > 0 ? 'pos' : (split.paid < 0 ? 'neg' : '') %>"><%= formatBrl(split.paid) %></td>
+            <td class="num cell-planned has-value <%= split.planned < 0 ? 'neg' : '' %>"><%= formatBrl(split.planned) %></td>
           <% } %>
         </tr>
       </tbody>
