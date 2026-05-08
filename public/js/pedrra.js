@@ -1,6 +1,27 @@
 (function () {
   const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  function animateCountUp(element, finalValue, duration = 800) {
+    const start = 0;
+    const startTime = performance.now();
+    const isCurrency = element.dataset.format === 'brl';
+    function frame(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = start + (finalValue - start) * eased;
+      element.textContent = isCurrency ? BRL.format(current) : Math.round(current).toString();
+      if (progress < 1) requestAnimationFrame(frame);
+      else element.textContent = isCurrency ? BRL.format(finalValue) : Math.round(finalValue).toString();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  document.querySelectorAll('.kpi-card-value[data-final-value]').forEach((el) => {
+    const v = Number(el.dataset.finalValue) || 0;
+    animateCountUp(el, v);
+  });
+
   const initial = window.PEDRRA_INITIAL;
   const ctx = document.getElementById('cashflow-chart').getContext('2d');
   let chart = null;

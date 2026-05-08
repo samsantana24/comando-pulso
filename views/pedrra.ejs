@@ -23,9 +23,9 @@
   <% } %>
 
   <section class="kpi-bar kpi-bar-6">
-    <div class="kpi-card">
+    <div class="kpi-card kpi-primary">
       <span class="kpi-card-label">Caixa hoje</span>
-      <span class="kpi-card-value strong"><%= formatBrl(cashToday) %></span>
+      <span class="kpi-card-value strong" data-final-value="<%= cashToday %>" data-format="brl"><%= formatBrl(cashToday) %></span>
     </div>
     <div class="kpi-card">
       <span class="kpi-card-label">Runway (cenário ativo)</span>
@@ -38,19 +38,19 @@
     </div>
     <div class="kpi-card">
       <span class="kpi-card-label">Sem. passada</span>
-      <span class="kpi-card-value <%= lastWeekResult >= 0 ? 'pos' : 'neg' %>"><%= formatBrl(lastWeekResult) %></span>
+      <span class="kpi-card-value <%= lastWeekResult >= 0 ? 'pos' : 'neg' %>" data-final-value="<%= lastWeekResult %>" data-format="brl"><%= formatBrl(lastWeekResult) %></span>
     </div>
     <div class="kpi-card">
       <span class="kpi-card-label">Sem. atual</span>
-      <span class="kpi-card-value <%= currentWeekResult >= 0 ? 'pos' : 'neg' %>"><%= formatBrl(currentWeekResult) %></span>
+      <span class="kpi-card-value <%= currentWeekResult >= 0 ? 'pos' : 'neg' %>" data-final-value="<%= currentWeekResult %>" data-format="brl"><%= formatBrl(currentWeekResult) %></span>
     </div>
     <div class="kpi-card">
       <span class="kpi-card-label">Próx. 2 sem (proj.)</span>
-      <span class="kpi-card-value <%= projection2Weeks >= 0 ? 'pos' : 'neg' %>"><%= formatBrl(projection2Weeks) %></span>
+      <span class="kpi-card-value <%= projection2Weeks >= 0 ? 'pos' : 'neg' %>" data-final-value="<%= projection2Weeks %>" data-format="brl"><%= formatBrl(projection2Weeks) %></span>
     </div>
     <div class="kpi-card">
       <span class="kpi-card-label">Ads sem. atual</span>
-      <span class="kpi-card-value ads-color"><%= formatBrl(adsCurrentWeek) %></span>
+      <span class="kpi-card-value ads-color" data-final-value="<%= adsCurrentWeek %>" data-format="brl"><%= formatBrl(adsCurrentWeek) %></span>
     </div>
   </section>
 
