@@ -31,7 +31,7 @@
       e.preventDefault();
       const url = form.dataset.endpoint;
       const method = form.dataset.method || 'POST';
-      if (!url) { alert('Endpoint não definido. Recarregue.'); return; }
+      if (!url) { window.toast('Endpoint não definido. Recarregue.'); return; }
       const submitBtn = form.querySelector('button[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
       try {
@@ -42,12 +42,12 @@
         });
         if (!res.ok && res.status !== 204) {
           const err = await res.json().catch(() => ({}));
-          alert('Erro: ' + (err.error || ('HTTP ' + res.status)));
+          window.toast('Erro: ' + (err.error || ('HTTP ' + res.status)));
           return;
         }
         window.location.reload();
       } catch (err) {
-        alert('Erro: ' + err.message);
+        window.toast('Erro: ' + err.message);
       } finally {
         if (submitBtn) submitBtn.disabled = false;
       }
@@ -101,12 +101,12 @@
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          alert('Erro: ' + (err.error || ('HTTP ' + res.status)));
+          window.toast('Erro: ' + (err.error || ('HTTP ' + res.status)));
           return;
         }
         window.location.reload();
       } catch (err) {
-        alert('Erro: ' + err.message);
+        window.toast('Erro: ' + err.message);
       }
     });
   }
@@ -232,12 +232,12 @@
         }
         if (!res.ok && res.status !== 204) {
           const err = await res.json().catch(() => ({}));
-          alert('Erro: ' + (err.error || ('HTTP ' + res.status)));
+          window.toast('Erro: ' + (err.error || ('HTTP ' + res.status)));
           return;
         }
         window.location.reload();
       } catch (err) {
-        alert('Erro: ' + err.message);
+        window.toast('Erro: ' + err.message);
       } finally {
         if (submitBtn) submitBtn.disabled = false;
       }

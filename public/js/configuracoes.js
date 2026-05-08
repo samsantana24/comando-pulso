@@ -43,12 +43,12 @@
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert('Erro: ' + (err.error || res.status));
+        window.toast('Erro: ' + (err.error || res.status));
         return;
       }
       window.location.reload();
     } catch (err) {
-      alert('Erro: ' + err.message);
+      window.toast('Erro: ' + err.message);
     }
   });
 
@@ -75,7 +75,7 @@
         window.location.reload();
       }
     } catch (err) {
-      alert('Erro: ' + err.message);
+      window.toast('Erro: ' + err.message);
     }
   });
 
@@ -108,12 +108,12 @@
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert('Erro: ' + (err.error || res.status));
+        window.toast('Erro: ' + (err.error || res.status));
         return;
       }
       window.location.reload();
     } catch (err) {
-      alert('Erro: ' + err.message);
+      window.toast('Erro: ' + err.message);
     }
   });
 
@@ -140,7 +140,7 @@
         if (res.status === 400) {
           const err = await res.json().catch(() => ({}));
           if (err.code !== 'HAS_COSTS' && !err.costs_count) {
-            alert('Erro: ' + (err.error || res.status));
+            window.toast('Erro: ' + (err.error || res.status));
             return;
           }
           const moveTo = window.prompt(
@@ -150,17 +150,17 @@
           res = await fetch('/api/categories/' + id + '?move_to=' + encodeURIComponent(moveTo.trim()), { method: 'DELETE' });
           if (!res.ok && res.status !== 204) {
             const err2 = await res.json().catch(() => ({}));
-            alert('Erro: ' + (err2.error || res.status));
+            window.toast('Erro: ' + (err2.error || res.status));
             return;
           }
         } else if (!res.ok && res.status !== 204) {
           const err = await res.json().catch(() => ({}));
-          alert('Erro: ' + (err.error || res.status));
+          window.toast('Erro: ' + (err.error || res.status));
           return;
         }
         window.location.reload();
       } catch (err) {
-        alert('Erro: ' + err.message);
+        window.toast('Erro: ' + err.message);
       }
     }
   });

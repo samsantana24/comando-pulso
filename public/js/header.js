@@ -32,7 +32,7 @@
     try {
       await postJson('/api/settings', { pedrra_visible_scenario_ids: JSON.stringify(ids) }, 'PUT');
     } catch (err) {
-      alert('Erro ao salvar visíveis: ' + err.message);
+      window.toast('Erro ao salvar visíveis: ' + err.message);
     }
   }
 
@@ -41,7 +41,7 @@
       const checked = root.querySelectorAll('input[data-action="visible-toggle"]:checked:not(:disabled)').length;
       if (checked > 3) {
         e.target.checked = false;
-        alert('Máximo 3 cenários adicionais visíveis no gráfico.');
+        window.toast('Máximo 3 cenários adicionais visíveis no gráfico.');
         return;
       }
       await saveVisibleScenarios();
@@ -93,7 +93,7 @@
         return;
       }
     } catch (err) {
-      alert('Erro: ' + err.message);
+      window.toast('Erro: ' + err.message);
     }
   });
 })();

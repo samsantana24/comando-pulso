@@ -38,12 +38,12 @@
         const res = await fetch(btn.dataset.url, { method: 'DELETE' });
         if (!res.ok && res.status !== 204) {
           const err = await res.json().catch(() => ({}));
-          alert('Erro: ' + (err.error || ('HTTP ' + res.status)));
+          window.toast('Erro: ' + (err.error || ('HTTP ' + res.status)));
           return;
         }
         window.location.reload();
       } catch (err) {
-        alert('Erro: ' + err.message);
+        window.toast('Erro: ' + err.message);
       }
     });
   });
@@ -82,12 +82,12 @@
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          alert('Erro: ' + (err.error || ('HTTP ' + res.status)));
+          window.toast('Erro: ' + (err.error || ('HTTP ' + res.status)));
           return;
         }
         window.location.reload();
       } catch (err) {
-        alert('Erro: ' + err.message);
+        window.toast('Erro: ' + err.message);
       }
     });
   }
@@ -99,12 +99,12 @@
         const res = await fetch('/api/receivables/' + btn.dataset.id, { method: 'DELETE' });
         if (!res.ok && res.status !== 204) {
           const err = await res.json().catch(() => ({}));
-          alert('Erro: ' + (err.error || ('HTTP ' + res.status)));
+          window.toast('Erro: ' + (err.error || ('HTTP ' + res.status)));
           return;
         }
         window.location.reload();
       } catch (err) {
-        alert('Erro: ' + err.message);
+        window.toast('Erro: ' + err.message);
       }
     });
   });

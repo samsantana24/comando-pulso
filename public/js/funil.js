@@ -216,7 +216,7 @@
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert('Erro: ' + (err.error || ('HTTP ' + res.status)));
+        window.toast('Erro: ' + (err.error || ('HTTP ' + res.status)));
         return;
       }
       const created = await res.json();
@@ -225,7 +225,7 @@
       recompute();
       scheduleSave();
     } catch (err) {
-      alert('Erro: ' + err.message);
+      window.toast('Erro: ' + err.message);
     } finally {
       if (submitBtn) submitBtn.disabled = false;
     }
@@ -242,7 +242,7 @@
         const res = await fetch('/api/team/' + id, { method: 'DELETE' });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          alert('Erro: ' + (err.error || ('HTTP ' + res.status)));
+          window.toast('Erro: ' + (err.error || ('HTTP ' + res.status)));
           return;
         }
         if (row) row.remove();
@@ -250,7 +250,7 @@
         recompute();
         scheduleSave();
       } catch (err) {
-        alert('Erro: ' + err.message);
+        window.toast('Erro: ' + err.message);
       }
     });
   }
