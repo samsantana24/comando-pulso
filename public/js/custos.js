@@ -285,6 +285,13 @@
       return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
+    function parseParcelClient(description) {
+      if (!description) return null;
+      const m = String(description).match(/ · parcela (\d+)\/(\d+)$/);
+      if (!m) return null;
+      return { current: Number(m[1]), total: Number(m[2]) };
+    }
+
     function render() {
       if (!loaded) return;
       const status = filterStatus.value;
@@ -313,6 +320,9 @@
       const canDelete = window.PERMS && window.PERMS.delete_cost === true;
       tbody.innerHTML = rows.map((c) => {
         const isAds = Number(c.is_ads) === 1;
+        const parcel = parseParcelClient(c.description);
+        const parcelIcon = parcel ? '<span class="parcel-icon" title="Parcela ' + parcel.current + '/' + parcel.total + '">⛓</span> ' : '';
+        const parcelTag = parcel ? ' <span class="parcel-tag">' + parcel.current + '/' + parcel.total + '</span>' : '';
         const statusBadge = c.status === 'paid'
           ? '<span class="badge action-create">PAGO</span>'
           : '<span class="badge action-update">A PAGAR</span>';
@@ -321,9 +331,9 @@
           canEdit && c.status === 'planned' ? '<button type="button" class="btn-link pos" data-act="pay" data-id="' + c.id + '">marcar pago</button>' : '',
           canDelete ? '<button type="button" class="btn-link danger" data-act="rm" data-id="' + c.id + '">excluir</button>' : '',
         ].filter(Boolean).join(' ');
-        return '<tr data-id="' + c.id + '">' +
+        return '<tr data-id="' + c.id + '" class="' + (parcel ? 'is-parcel' : '') + '">' +
           '<td>' + fmtDate(c.date) + '</td>' +
-          '<td>' + escapeHtml(c.category) + (isAds ? ' <span class="badge action-update">ADS</span>' : '') + '</td>' +
+          '<td>' + parcelIcon + escapeHtml(c.category) + (isAds ? ' <span class="badge action-update">ADS</span>' : '') + parcelTag + '</td>' +
           '<td class="muted">' + escapeHtml(c.description || '') + '</td>' +
           '<td class="num money">' + BRL.format(c.amount) + '</td>' +
           '<td>' + statusBadge + '</td>' +

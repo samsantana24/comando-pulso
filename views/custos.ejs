@@ -242,11 +242,14 @@
       <% } %>
       <ul class="entries-list">
         <% for (const c of recentCosts) { %>
-          <li>
+          <% const parcel = parseParcel(c.description); %>
+          <li class="<%= parcel ? 'is-parcel' : '' %>">
             <div class="entry-line">
+              <% if (parcel) { %><span class="parcel-icon" title="Parcela <%= parcel.current %> de <%= parcel.total %>">⛓</span><% } %>
               <strong><%= formatBrl(c.amount) %></strong>
               <span class="muted"><%= formatDateShort(c.date) %></span>
               <span class="badge <%= c.status %>"><%= c.status === 'paid' ? 'pago' : 'previsto' %></span>
+              <% if (parcel) { %><span class="parcel-tag"><%= parcel.current %>/<%= parcel.total %></span><% } %>
               <% if (c.recurrence_id) { %><span class="badge recur">recorrente</span><% } %>
             </div>
             <div class="entry-line muted">
