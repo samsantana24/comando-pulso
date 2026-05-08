@@ -163,6 +163,30 @@
   </form>
 </dialog>
 
+<dialog id="modal-edit-ads-week" class="modal">
+  <form id="form-edit-ads-week">
+    <h2>Editar Ads da semana</h2>
+    <p class="muted" id="edit-ads-context"></p>
+    <input type="hidden" name="week_start_date" />
+    <label class="form-label">Valor total da semana (R$)
+      <input type="number" name="total_amount" step="0.01" min="0" required />
+    </label>
+    <p class="ads-preview muted" id="edit-ads-preview"></p>
+    <label class="form-label">Cenário
+      <select name="scenario_id">
+        <option value="">Realidade (todos cenários)</option>
+        <% if (activeScenario) { %>
+          <option value="<%= activeScenario.id %>">Apenas neste (<%= activeScenario.name %>)</option>
+        <% } %>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="modal-ads" class="modal">
   <form id="form-ads">
     <h2>Investimento em Ads (semanal)</h2>
