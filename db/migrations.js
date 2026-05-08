@@ -161,7 +161,10 @@ function runMigrations(db) {
 
   addColumnIfMissing(db, 'costs', 'is_ads', 'INTEGER DEFAULT 0');
   addColumnIfMissing(db, 'costs', 'from_initial_seed', 'INTEGER DEFAULT 0');
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_costs_is_ads ON costs(is_ads);`);
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_costs_is_ads ON costs(is_ads);
+    CREATE INDEX IF NOT EXISTS idx_costs_from_seed ON costs(from_initial_seed);
+  `);
 }
 
 function addColumnIfMissing(db, table, columnName, columnDef) {
