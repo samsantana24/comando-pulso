@@ -3,6 +3,15 @@
 
 <main class="container pedrra">
 
+  <section class="toolbar">
+    <div class="toolbar-actions">
+      <button type="button" class="btn btn-primary" data-modal="venda">+ Venda</button>
+      <button type="button" class="btn btn-primary" data-modal="custo">+ Custo</button>
+      <button type="button" class="btn btn-ghost" data-modal="recorrente">+ Custo recorrente</button>
+      <button type="button" class="btn btn-warn" data-modal="ads">+ Investimento em Ads</button>
+    </div>
+  </section>
+
   <%- include('partials/data-entry', { closers: closers, activeScenario: activeScenario, today: today, categoriesByGroup: categoriesByGroup }) %>
 
   <% if (upcomingReceivables.length > 0) { %>
