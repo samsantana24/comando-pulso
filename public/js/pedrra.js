@@ -80,6 +80,24 @@
     }));
   }
 
+  const CHART_COLORS = {
+    cash:        '#FF2E5A',
+    cashFill:    'rgba(255, 46, 90, 0.08)',
+    costs:       'rgba(255, 46, 90, 0.40)',
+    costsBorder: 'rgba(255, 46, 90, 0.65)',
+    ads:         'rgba(255, 165, 0, 0.45)',
+    adsBorder:   'rgba(255, 165, 0, 0.75)',
+    grid:        'rgba(255, 255, 255, 0.04)',
+    axis:        '#5A5A5A',
+    axisLabel:   '#8A8A8A',
+  };
+
+  function formatBrlCompact(v) {
+    if (Math.abs(v) >= 1000000) return 'R$ ' + (v / 1000000).toFixed(1) + 'M';
+    if (Math.abs(v) >= 1000) return 'R$ ' + Math.round(v / 1000) + 'k';
+    return 'R$ ' + Math.round(v);
+  }
+
   function render() {
     const { labels, realCash, projCash, costsBars, adsBars, todayIdx } = buildLabelsAndData();
 
@@ -92,16 +110,19 @@
         const x = xScale.getPixelForValue(todayIdx);
         const c = chart.ctx;
         c.save();
-        c.strokeStyle = 'rgba(45, 212, 191, 0.6)';
+        c.strokeStyle = 'rgba(255, 46, 90, 0.8)';
+        c.shadowColor = 'rgba(255, 46, 90, 0.6)';
+        c.shadowBlur = 8;
         c.setLineDash([4, 4]);
         c.lineWidth = 1.5;
         c.beginPath();
         c.moveTo(x, yScale.top);
         c.lineTo(x, yScale.bottom);
         c.stroke();
-        c.fillStyle = 'rgba(45, 212, 191, 0.9)';
-        c.font = '11px -apple-system, sans-serif';
-        c.fillText('hoje', x + 4, yScale.top + 12);
+        c.shadowBlur = 0;
+        c.fillStyle = 'rgba(255, 46, 90, 0.95)';
+        c.font = '700 11px Inter, -apple-system, sans-serif';
+        c.fillText('HOJE', x + 6, yScale.top + 14);
         c.restore();
       },
     };
@@ -117,48 +138,56 @@
             label: 'Custos',
             type: 'bar',
             data: costsBars,
-            backgroundColor: 'rgba(239, 68, 68, 0.45)',
-            borderColor: 'rgba(239, 68, 68, 0.9)',
+            backgroundColor: CHART_COLORS.costs,
+            borderColor: CHART_COLORS.costsBorder,
             borderWidth: 1,
-            yAxisID: 'y2',
-            stack: 'spend',
+            borderRadius: 4,
+            yAxisID: 'y1',
+            order: 3,
           },
           {
             label: 'Ads',
             type: 'bar',
             data: adsBars,
-            backgroundColor: 'rgba(245, 158, 11, 0.55)',
-            borderColor: 'rgba(245, 158, 11, 0.9)',
+            backgroundColor: CHART_COLORS.ads,
+            borderColor: CHART_COLORS.adsBorder,
             borderWidth: 1,
-            yAxisID: 'y2',
-            stack: 'spend',
+            borderRadius: 4,
+            yAxisID: 'y1',
+            order: 4,
           },
           {
-            label: 'Caixa real',
+            label: 'Caixa',
             type: 'line',
             data: realCash,
-            borderColor: scenarioColor,
-            backgroundColor: 'rgba(45, 212, 191, 0.10)',
-            tension: 0.18,
-            spanGaps: true,
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            borderColor: CHART_COLORS.cash,
+            backgroundColor: CHART_COLORS.cashFill,
             borderWidth: 2.5,
+            tension: 0.35,
+            spanGaps: true,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: CHART_COLORS.cash,
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2,
+            fill: 'origin',
             yAxisID: 'y',
+            order: 1,
           },
           {
             label: 'Caixa proj. · ' + scenarioName,
             type: 'line',
             data: projCash,
-            borderColor: '#94A3B8',
-            borderDash: [6, 4],
-            backgroundColor: 'rgba(148, 163, 184, 0.04)',
-            tension: 0.18,
-            spanGaps: true,
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            borderColor: CHART_COLORS.cash,
+            borderDash: [6, 5],
+            backgroundColor: 'transparent',
             borderWidth: 2,
+            tension: 0.35,
+            spanGaps: true,
+            pointRadius: 0,
+            pointHoverRadius: 6,
             yAxisID: 'y',
+            order: 2,
           },
           ...buildExtraScenarioDatasets(),
         ],
@@ -168,23 +197,64 @@
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         scales: {
+          x: {
+            grid: { display: false, color: CHART_COLORS.grid },
+            ticks: {
+              color: CHART_COLORS.axisLabel,
+              font: { family: 'Inter', size: 11, weight: '600' },
+            },
+            border: { color: CHART_COLORS.grid },
+          },
           y: {
             position: 'left',
-            ticks: { color: '#94A3B8', callback: (v) => BRL.format(v) },
-            grid: { color: 'rgba(148, 163, 184, 0.10)' },
-            title: { display: true, text: 'Caixa', color: '#94A3B8', font: { size: 11 } },
+            grid: { color: CHART_COLORS.grid, drawBorder: false, drawTicks: false },
+            ticks: {
+              color: CHART_COLORS.axisLabel,
+              font: { family: 'Inter', size: 11, weight: '500' },
+              callback: (v) => formatBrlCompact(v),
+              padding: 8,
+            },
+            border: { display: false },
           },
-          y2: {
+          y1: {
             position: 'right',
-            ticks: { color: '#FBBF24', callback: (v) => BRL.format(v) },
+            display: false,
             grid: { display: false },
-            title: { display: true, text: 'Custos / Ads', color: '#FBBF24', font: { size: 11 } },
+            beginAtZero: true,
           },
-          x: { ticks: { color: '#94A3B8' }, grid: { display: false } },
         },
         plugins: {
-          legend: { labels: { color: '#F1F5F9' } },
+          legend: {
+            display: true,
+            position: 'top',
+            align: 'end',
+            labels: {
+              color: '#C5C5C5',
+              font: { family: 'Inter', size: 12, weight: '600' },
+              usePointStyle: true,
+              padding: 16,
+              boxWidth: 8,
+              boxHeight: 8,
+            },
+          },
           tooltip: {
+            enabled: true,
+            backgroundColor: 'rgba(14, 14, 15, 0.95)',
+            titleColor: '#fff',
+            titleFont: { family: 'Inter', size: 12, weight: '800' },
+            bodyColor: '#C5C5C5',
+            bodyFont: { family: 'Inter', size: 12, weight: '500' },
+            footerColor: '#8A8A8A',
+            footerFont: { family: 'Inter', size: 11, weight: '500' },
+            padding: 14,
+            cornerRadius: 10,
+            borderColor: 'rgba(255, 46, 90, 0.4)',
+            borderWidth: 1,
+            displayColors: true,
+            boxWidth: 8,
+            boxHeight: 8,
+            boxPadding: 6,
+            caretSize: 6,
             callbacks: {
               title: (items) => {
                 if (!items[0]) return '';
