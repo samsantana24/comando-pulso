@@ -12,7 +12,7 @@
     </div>
   </section>
 
-  <%- include('partials/data-entry', { closers: closers, activeScenario: activeScenario, today: today, categoriesByGroup: categoriesByGroup }) %>
+  <%- include('partials/data-entry', { closers: closers, activeScenario: activeScenario, today: today, categoriesByGroup: categoriesByGroup, scenarios: locals.scenarios }) %>
 
   <% if (upcomingReceivables.length > 0) { %>
     <div class="alert alert-warn upcoming-receivables">

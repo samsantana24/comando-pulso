@@ -265,3 +265,56 @@
     </div>
   </form>
 </dialog>
+
+<dialog id="modal-todos-futuros" class="modal modal-wide">
+  <div class="modal-head">
+    <h2>Todos os custos futuros</h2>
+    <button type="button" class="btn btn-ghost btn-small" data-close-modal>Fechar</button>
+  </div>
+  <p class="muted">Lista todos os custos com data a partir de hoje. Filtre por status, categoria ou cenário. Edite ou exclua direto na lista.</p>
+  <div class="future-toolbar">
+    <label class="form-label">Status
+      <select id="future-filter-status">
+        <option value="planned" selected>A pagar (previstos)</option>
+        <option value="paid">Pagos (futuros)</option>
+        <option value="all">Todos</option>
+      </select>
+    </label>
+    <label class="form-label">Categoria
+      <select id="future-filter-category"><option value="">Todas</option></select>
+    </label>
+    <label class="form-label">Cenário
+      <select id="future-filter-scenario">
+        <option value="">Todos</option>
+        <option value="null">Realidade (sem cenário)</option>
+        <% if (typeof scenarios !== 'undefined' && scenarios) { %>
+          <% for (const s of scenarios) { %>
+            <option value="<%= s.id %>"><%= s.name %></option>
+          <% } %>
+        <% } %>
+      </select>
+    </label>
+    <label class="form-label">Buscar
+      <input type="search" id="future-filter-search" placeholder="Categoria, descrição…" />
+    </label>
+    <div class="future-summary" id="future-summary"></div>
+  </div>
+  <div class="future-table-wrap">
+    <table class="future-table">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Categoria</th>
+          <th>Descrição</th>
+          <th class="num">Valor</th>
+          <th>Status</th>
+          <th>Cenário</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="future-tbody">
+        <tr><td colspan="7" class="muted center">Carregando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</dialog>

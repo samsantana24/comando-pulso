@@ -4,6 +4,8 @@
   window.PERMS = {
     edit_ads: <%= userCan('action.edit_ads') ? 'true' : 'false' %>,
     delete_ads: <%= userCan('action.delete_ads') ? 'true' : 'false' %>,
+    edit_cost: <%= userCan('action.edit_cost') ? 'true' : 'false' %>,
+    delete_cost: <%= userCan('action.delete_cost') ? 'true' : 'false' %>,
   };
 </script>
 
@@ -21,6 +23,9 @@
     <div class="cenario-info">
       Cenário: <strong><%= activeScenario ? activeScenario.name : '—' %></strong>
     </div>
+    <button type="button" class="btn btn-ghost btn-with-icon" data-modal="todos-futuros" title="Ver e editar todos os custos previstos no futuro">
+      <%- include('partials/icons', { name: 'refresh' }) %><span>Todos os futuros</span>
+    </button>
     <% const showToolbarActions = userCan('action.add_sale') || userCan('action.add_cost') || userCan('action.add_recurring_cost') || userCan('action.add_ads'); %>
     <% if (showToolbarActions) { %>
       <div class="toolbar-actions">
@@ -43,7 +48,7 @@
     <% } %>
   </section>
 
-  <%- include('partials/data-entry', { closers: closers, activeScenario: activeScenario, today: today, categoriesByGroup: categoriesByGroup }) %>
+  <%- include('partials/data-entry', { closers: closers, activeScenario: activeScenario, today: today, categoriesByGroup: categoriesByGroup, scenarios: locals.scenarios }) %>
 
   <section class="weekly-grid-wrap">
     <table class="weekly-grid">

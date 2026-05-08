@@ -2066,3 +2066,64 @@ body.values-hidden .kpi-card-value::after { content: ''; }
 }
 .parcel-date-input:focus { outline: none; border-color: var(--accent); }
 .parcel-amount { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--fg); }
+
+/* ============ Modal wide (lista de custos futuros) ============ */
+.modal.modal-wide {
+  max-width: 1200px;
+  width: 96vw;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.future-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin: 16px 0;
+  padding: 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.future-toolbar .form-label { margin-bottom: 0; min-width: 140px; }
+.future-toolbar input[type="search"] { min-width: 200px; }
+.future-summary {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.future-table-wrap {
+  max-height: 60vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.future-table { width: 100%; border-collapse: collapse; }
+.future-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  z-index: 1;
+}
+.future-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+.future-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+.future-table .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.future-table .btn-link.pos { color: var(--pos); }

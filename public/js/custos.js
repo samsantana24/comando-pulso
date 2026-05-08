@@ -231,4 +231,176 @@
       }
     })();
   }
+
+  // === Modal "Todos os custos futuros" ===
+  const futurosDlg = document.getElementById('modal-todos-futuros');
+  if (futurosDlg) {
+    const tbody = document.getElementById('future-tbody');
+    const filterStatus = document.getElementById('future-filter-status');
+    const filterCat = document.getElementById('future-filter-category');
+    const filterScen = document.getElementById('future-filter-scenario');
+    const filterSearch = document.getElementById('future-filter-search');
+    const summary = document.getElementById('future-summary');
+    let allCosts = [];
+    let loaded = false;
+
+    function todayYmd() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + dd;
+    }
+
+    function fmtDate(ymd) {
+      if (!ymd) return '';
+      const [y, m, d] = ymd.split('-');
+      return d + '/' + m + '/' + y.slice(2);
+    }
+
+    function scenarioName(id) {
+      if (id == null) return '—';
+      const opt = filterScen.querySelector('option[value="' + id + '"]');
+      return opt ? opt.textContent : '#' + id;
+    }
+
+    async function loadAll() {
+      tbody.innerHTML = '<tr><td colspan="7" class="muted center">Carregando…</td></tr>';
+      try {
+        const res = await fetch('/api/costs?from=' + todayYmd() + '&to=2030-12-31');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        allCosts = await res.json();
+        // categorias unicas
+        const cats = [...new Set(allCosts.map((c) => c.category))].sort();
+        filterCat.innerHTML = '<option value="">Todas</option>' +
+          cats.map((c) => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
+        loaded = true;
+        render();
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="7" class="muted center">Erro: ' + err.message + '</td></tr>';
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function render() {
+      if (!loaded) return;
+      const status = filterStatus.value;
+      const cat = filterCat.value;
+      const scen = filterScen.value;
+      const q = (filterSearch.value || '').trim().toLowerCase();
+      let rows = allCosts.slice();
+      if (status !== 'all') rows = rows.filter((c) => c.status === status);
+      if (cat) rows = rows.filter((c) => c.category === cat);
+      if (scen === 'null') rows = rows.filter((c) => c.scenario_id == null);
+      else if (scen) rows = rows.filter((c) => String(c.scenario_id) === scen);
+      if (q) rows = rows.filter((c) =>
+        (c.category || '').toLowerCase().includes(q) ||
+        (c.description || '').toLowerCase().includes(q)
+      );
+      rows.sort((a, b) => a.date.localeCompare(b.date));
+
+      const total = rows.reduce((acc, c) => acc + Number(c.amount || 0), 0);
+      summary.textContent = rows.length + ' custos · ' + BRL.format(total);
+
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="muted center">Nenhum custo encontrado com esses filtros.</td></tr>';
+        return;
+      }
+      const canEdit = window.PERMS && window.PERMS.edit_cost === true;
+      const canDelete = window.PERMS && window.PERMS.delete_cost === true;
+      tbody.innerHTML = rows.map((c) => {
+        const isAds = Number(c.is_ads) === 1;
+        const statusBadge = c.status === 'paid'
+          ? '<span class="badge action-create">PAGO</span>'
+          : '<span class="badge action-update">A PAGAR</span>';
+        const actions = [
+          canEdit ? '<button type="button" class="btn-link" data-act="ed" data-id="' + c.id + '">editar</button>' : '',
+          canEdit && c.status === 'planned' ? '<button type="button" class="btn-link pos" data-act="pay" data-id="' + c.id + '">marcar pago</button>' : '',
+          canDelete ? '<button type="button" class="btn-link danger" data-act="rm" data-id="' + c.id + '">excluir</button>' : '',
+        ].filter(Boolean).join(' ');
+        return '<tr data-id="' + c.id + '">' +
+          '<td>' + fmtDate(c.date) + '</td>' +
+          '<td>' + escapeHtml(c.category) + (isAds ? ' <span class="badge action-update">ADS</span>' : '') + '</td>' +
+          '<td class="muted">' + escapeHtml(c.description || '') + '</td>' +
+          '<td class="num money">' + BRL.format(c.amount) + '</td>' +
+          '<td>' + statusBadge + '</td>' +
+          '<td class="muted">' + escapeHtml(scenarioName(c.scenario_id)) + '</td>' +
+          '<td>' + (actions || '<span class="muted">—</span>') + '</td>' +
+          '</tr>';
+      }).join('');
+
+      tbody.querySelectorAll('[data-act="ed"]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.dataset.id);
+          const c = allCosts.find((x) => x.id === id);
+          if (!c) return;
+          const dlg = document.getElementById('modal-edit-cost');
+          const form = dlg.querySelector('form');
+          form.dataset.endpoint = '/api/costs/' + c.id;
+          loadIntoForm(form, c, ['date', 'amount', 'category', 'description', 'status']);
+          futurosDlg.close();
+          dlg.showModal();
+        });
+      });
+      tbody.querySelectorAll('[data-act="pay"]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = Number(btn.dataset.id);
+          const c = allCosts.find((x) => x.id === id);
+          if (!c) return;
+          const newDate = prompt('Data do pagamento (YYYY-MM-DD)?', todayYmd());
+          if (!newDate) return;
+          try {
+            const res = await fetch('/api/costs/' + id, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'paid', date: newDate }),
+            });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              window.toast('Erro: ' + (err.error || ('HTTP ' + res.status)));
+              return;
+            }
+            await loadAll();
+            window.toast('Custo marcado como pago ✓');
+          } catch (err) { window.toast('Erro: ' + err.message); }
+        });
+      });
+      tbody.querySelectorAll('[data-act="rm"]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Excluir este custo? Esta ação não pode ser desfeita.')) return;
+          const id = Number(btn.dataset.id);
+          try {
+            const res = await fetch('/api/costs/' + id, { method: 'DELETE' });
+            if (!res.ok && res.status !== 204) {
+              const err = await res.json().catch(() => ({}));
+              window.toast('Erro: ' + (err.error || ('HTTP ' + res.status)));
+              return;
+            }
+            allCosts = allCosts.filter((x) => x.id !== id);
+            render();
+            window.toast('Custo excluído');
+          } catch (err) { window.toast('Erro: ' + err.message); }
+        });
+      });
+    }
+
+    [filterStatus, filterCat, filterScen].forEach((el) => el && el.addEventListener('change', render));
+    if (filterSearch) filterSearch.addEventListener('input', render);
+
+    futurosDlg.addEventListener('close', () => { /* nothing */ });
+    // Trigger reload toda vez que abre (pra refletir mudanças feitas em outras telas)
+    const triggerBtns = document.querySelectorAll('[data-modal="todos-futuros"]');
+    triggerBtns.forEach((b) => b.addEventListener('click', () => { loadAll(); }));
+  }
+
+  function loadIntoForm(form, payload, fields) {
+    for (const k of fields) {
+      const el = form.elements[k];
+      if (!el) continue;
+      el.value = payload[k] == null ? '' : payload[k];
+    }
+  }
 })();
