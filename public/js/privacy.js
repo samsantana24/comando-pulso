@@ -23,27 +23,42 @@
     apply(next);
   }
 
-  // Auto-marca elementos com texto BRL como .money
-  function autoTagMoney() {
-    const re = /R\$\s*[\d.,•]+/;
-    const candidates = document.querySelectorAll('.kpi-card-value, .amount, .num, .total, .subtotal, [data-money]');
-    candidates.forEach((el) => {
+  const MONEY_SELECTOR = '.kpi-card-value, .amount, .num, [data-money], td.amount, .total, .subtotal';
+  const MONEY_REGEX = /R\$\s*[\d.,•]+/;
+
+  // Marca via seletor estrito — chamado em mutações (cheap)
+  function tagBySelector() {
+    document.querySelectorAll(MONEY_SELECTOR).forEach((el) => {
       if (!el.classList.contains('money')) el.classList.add('money');
     });
-    // Sweep extra: qualquer leaf node com "R$" vira .money se não estiver dentro de input/textarea
+  }
+
+  // Sweep completo via regex — caro, só rodar uma vez no boot
+  function autoTagFullSweep() {
+    tagBySelector();
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT, null);
     let n;
     while ((n = walker.nextNode())) {
       if (n.tagName === 'INPUT' || n.tagName === 'TEXTAREA' || n.tagName === 'SCRIPT' || n.tagName === 'STYLE') continue;
-      if (n.children.length === 0 && n.textContent && re.test(n.textContent)) {
+      if (n.children.length === 0 && n.textContent && MONEY_REGEX.test(n.textContent)) {
         if (!n.classList.contains('money')) n.classList.add('money');
       }
     }
   }
 
+  // Debounce: agenda re-tag após 200ms de quietude do DOM
+  let debounceTimer = null;
+  function scheduleTag() {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      debounceTimer = null;
+      tagBySelector();
+    }, 200);
+  }
+
   function init() {
     apply(isHidden());
-    autoTagMoney();
+    autoTagFullSweep();
     const btn = document.getElementById('privacy-toggle');
     if (btn) btn.addEventListener('click', toggle);
     document.addEventListener('keydown', (e) => {
@@ -52,8 +67,8 @@
         toggle();
       }
     });
-    // Re-tag após mutações grandes (ex: tabela atualizada via fetch)
-    const obs = new MutationObserver(() => autoTagMoney());
+    // Mutações pós-boot usam seletor restrito + debounce, não tree walk
+    const obs = new MutationObserver(scheduleTag);
     obs.observe(document.body, { childList: true, subtree: true });
   }
 

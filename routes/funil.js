@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { requireAuth, requireMaster, requireTotp, requireNav } = require('../lib/auth');
+const { requireAuth, requireTotp, requireNav } = require('../lib/auth');
 const team = require('../db/queries/team');
 const funnel = require('../db/queries/funnel');
 const scenarios = require('../db/queries/scenarios');
@@ -32,6 +32,7 @@ router.get('/', requireAuth, requireNav('nav.funil'), requireTotp, (req, res) =>
   res.render('funil', {
     title: 'Funil',
     user: req.user,
+    userCan: res.locals.userCan,
     activeScenario: active,
     funnel: funnelData,
     sdrs: sdrs.map(joinPerf),

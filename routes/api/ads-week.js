@@ -2,7 +2,6 @@ const router = require('express').Router();
 const db = require('../../db/connection');
 const { weekRangeFromDate, ymd, weekIdFromSunday, weekLabel } = require('../../lib/weeks');
 const { audit } = require('../../lib/audit');
-const { requireMaster } = require('../../lib/auth');
 const { isDateInRange, isNonNegative, MIN_DATE, MAX_DATE } = require('../../lib/validators');
 const { requirePerm } = require('../../lib/permissions');
 

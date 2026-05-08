@@ -242,8 +242,56 @@ CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
 ```
 
 `action` em uppercase: `CREATE`, `UPDATE`, `DELETE`, `ACTIVATE`, etc.
-`entity_type`: `sale`, `cost`, `scenario`, `team_member`, `setting`, `recurrence`.
+`entity_type`: `sale`, `cost`, `scenario`, `team_member`, `setting`, `recurrence`, `permissions`.
 `before_value` e `after_value` são JSON serializado.
+
+---
+
+### permissions — controle granular do que cada role pode fazer
+
+```sql
+CREATE TABLE IF NOT EXISTS permissions (
+  role TEXT NOT NULL,
+  perm_key TEXT NOT NULL,
+  allowed INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_by TEXT,
+  PRIMARY KEY (role, perm_key)
+);
+```
+
+Chave composta `(role, perm_key)`. Master ignora a tabela e tem todas as permissões implicitamente. Apenas `financeiro` consulta a tabela.
+
+`perm_key` segue convenção `<grupo>.<acao>`:
+- `nav.*` — acesso a abas (pedrra, custos, funil, configuracoes)
+- `action.*` — operações CRUD (add/edit/delete) por entidade (sale, cost, ads, recurring_cost…)
+- `view.*` — visibilidade de KPIs sensíveis (kpi_caixa, runway, audit_log)
+
+Catálogo canônico em `lib/permissions.js` (`PERM_CATALOG`). Helper `userCan(user, key)` faz o lookup. Middleware `requirePerm(key)` para rotas API e `requireNav(key)` para rotas de página.
+
+**Seed inicial** (idempotente, defaults da Rachel):
+```sql
+INSERT OR IGNORE INTO permissions (role, perm_key, allowed) VALUES
+  ('financeiro', 'nav.pedrra', 0),
+  ('financeiro', 'nav.custos', 1),
+  ('financeiro', 'nav.funil', 0),
+  ('financeiro', 'nav.configuracoes', 0),
+  ('financeiro', 'action.add_sale', 1),
+  ('financeiro', 'action.edit_sale', 1),
+  ('financeiro', 'action.delete_sale', 0),
+  ('financeiro', 'action.add_cost', 1),
+  ('financeiro', 'action.edit_cost', 1),
+  ('financeiro', 'action.delete_cost', 0),
+  ('financeiro', 'action.add_recurring_cost', 1),
+  ('financeiro', 'action.add_ads', 0),
+  ('financeiro', 'action.edit_ads', 0),
+  ('financeiro', 'action.delete_ads', 0),
+  ('financeiro', 'view.kpi_caixa', 0),
+  ('financeiro', 'view.runway', 0),
+  ('financeiro', 'view.audit_log', 0);
+```
+
+Mudanças via `PUT /api/permissions` (apenas master), auditadas em `audit_log` como `entity_type='permissions'`.
 
 ---
 
@@ -272,8 +320,9 @@ db.pragma('synchronous = NORMAL');   // balance entre durabilidade e perf
 9. CREATE TABLE scenario_funnel (referencia scenarios)
 10. CREATE TABLE scenario_team_performance (referencia scenarios e team_members)
 11. CREATE TABLE audit_log
-12. Todos os CREATE INDEX
-13. Seeds idempotentes (settings + users + cenário Base)
+12. CREATE TABLE permissions
+13. Todos os CREATE INDEX
+14. Seeds idempotentes (settings + users + cenário Base + permissions defaults)
 
 ---
 

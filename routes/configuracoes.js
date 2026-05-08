@@ -29,6 +29,7 @@ router.get('/', requireAuth, requireMaster, requireTotp, (req, res) => {
   res.render('configuracoes', {
     title: 'Configurações',
     user: req.user,
+    userCan: res.locals.userCan,
     settings: settings.getAll(),
     team: team.list({ activeOnly: false }),
     auditEntries: audit.list(100),

@@ -111,6 +111,7 @@ router.get('/', requireAuth, requireTotp, (req, res) => {
   res.render('custos', {
     title: 'Custos e Vendas',
     user: req.user,
+    userCan: res.locals.userCan,
     weeks,
     salesByWeek,
     costsByGroup,

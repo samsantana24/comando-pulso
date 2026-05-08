@@ -420,10 +420,40 @@
 
   recompute();
 
-  const restored = applyPrefsToSelects();
-  if (restored) {
-    loadWindow();
-  } else {
-    loadVisibleScenarioSeries(1, 2).then(render);
+  function applyPrivacyToChart(hidden) {
+    if (!chart) return;
+    chart.options.scales.y.ticks.callback = hidden
+      ? () => '••••'
+      : (v) => formatBrlCompact(v);
+    chart.options.plugins.tooltip.callbacks.label = hidden
+      ? (item) => item.dataset.label + ': ••••'
+      : (item) => item.dataset.label + ': ' + BRL.format(item.parsed.y);
+    chart.options.plugins.tooltip.callbacks.afterBody = hidden
+      ? () => ''
+      : (items) => {
+          if (!items[0]) return '';
+          const idx = items[0].dataIndex;
+          const w = projection[idx];
+          const lines = [];
+          if (Array.isArray(w.top_costs) && w.top_costs.length > 0) {
+            lines.push('');
+            lines.push('Top custos da semana:');
+            for (const t of w.top_costs) {
+              lines.push('• ' + t.category + ' · ' + BRL.format(t.total));
+            }
+          }
+          return lines;
+        };
+    chart.update('none');
   }
+
+  document.addEventListener('privacy:changed', (e) => {
+    applyPrivacyToChart(!!(e.detail && e.detail.hidden));
+  });
+
+  const restored = applyPrefsToSelects();
+  const ready = restored ? loadWindow() : loadVisibleScenarioSeries(1, 2).then(render);
+  Promise.resolve(ready).then(() => {
+    if (document.body.classList.contains('values-hidden')) applyPrivacyToChart(true);
+  });
 })();

@@ -1,5 +1,5 @@
 <%- include('partials/head', { title: title, assetVersion: locals.assetVersion }) %>
-<%- include('partials/header', { title: title, user: user, scenarios: locals.scenarios, activeScenario: locals.activeScenario, assetVersion: locals.assetVersion }) %>
+<%- include('partials/header', { title: title, user: user, userCan: userCan, scenarios: locals.scenarios, activeScenario: locals.activeScenario, assetVersion: locals.assetVersion }) %>
 
 <main class="container custos">
   <section class="toolbar">
@@ -15,20 +15,23 @@
     <div class="cenario-info">
       Cenário: <strong><%= activeScenario ? activeScenario.name : '—' %></strong>
     </div>
-    <div class="toolbar-actions">
-      <% if (userCan('action.add_sale')) { %>
-        <button type="button" class="btn btn-primary" data-modal="venda">+ Venda</button>
-      <% } %>
-      <% if (userCan('action.add_cost')) { %>
-        <button type="button" class="btn btn-primary" data-modal="custo">+ Custo</button>
-      <% } %>
-      <% if (userCan('action.add_recurring_cost')) { %>
-        <button type="button" class="btn btn-ghost" data-modal="recorrente">+ Custo recorrente</button>
-      <% } %>
-      <% if (userCan('action.add_ads')) { %>
-        <button type="button" class="btn btn-warn" data-modal="ads">+ Investimento em Ads</button>
-      <% } %>
-    </div>
+    <% const showToolbarActions = userCan('action.add_sale') || userCan('action.add_cost') || userCan('action.add_recurring_cost') || userCan('action.add_ads'); %>
+    <% if (showToolbarActions) { %>
+      <div class="toolbar-actions">
+        <% if (userCan('action.add_sale')) { %>
+          <button type="button" class="btn btn-primary" data-modal="venda">+ Venda</button>
+        <% } %>
+        <% if (userCan('action.add_cost')) { %>
+          <button type="button" class="btn btn-primary" data-modal="custo">+ Custo</button>
+        <% } %>
+        <% if (userCan('action.add_recurring_cost')) { %>
+          <button type="button" class="btn btn-ghost" data-modal="recorrente">+ Custo recorrente</button>
+        <% } %>
+        <% if (userCan('action.add_ads')) { %>
+          <button type="button" class="btn btn-warn" data-modal="ads">+ Investimento em Ads</button>
+        <% } %>
+      </div>
+    <% } %>
   </section>
 
   <%- include('partials/data-entry', { closers: closers, activeScenario: activeScenario, today: today, categoriesByGroup: categoriesByGroup }) %>

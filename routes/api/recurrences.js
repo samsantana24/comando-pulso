@@ -5,6 +5,7 @@ const db = require('../../db/connection');
 const { expandRule } = require('../../lib/recurrence');
 const { todayYmd } = require('../../lib/weeks');
 const { audit } = require('../../lib/audit');
+const { requirePerm } = require('../../lib/permissions');
 
 const isYmd = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
 
@@ -12,7 +13,7 @@ router.get('/', (req, res) => {
   res.json(recurrence.list({ activeOnly: true }));
 });
 
-router.patch('/:id', (req, res) => {
+router.patch('/:id', requirePerm('action.add_recurring_cost'), (req, res) => {
   const id = Number(req.params.id);
   const before = recurrence.getById(id);
   if (!before) return res.status(404).json({ error: 'regra não encontrada' });
@@ -52,7 +53,7 @@ router.patch('/:id', (req, res) => {
   res.json(updated);
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requirePerm('action.add_recurring_cost'), (req, res) => {
   const id = Number(req.params.id);
   const before = recurrence.getById(id);
   if (!before) return res.status(404).json({ error: 'regra não encontrada' });

@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { requireAuth, requireMaster, requireTotp, requireNav } = require('../lib/auth');
+const { requireAuth, requireTotp, requireNav } = require('../lib/auth');
 const cashflow = require('../lib/cashflow');
 const scenarios = require('../db/queries/scenarios');
 const receivables = require('../db/queries/receivables');
@@ -45,6 +45,7 @@ router.get('/', requireAuth, requireNav('nav.pedrra'), requireTotp, (req, res) =
   res.render('pedrra', {
     title: 'PEDRRA',
     user: req.user,
+    userCan: res.locals.userCan,
     activeScenario: active,
     cashflow: data,
     cashToday: data.cash_today,
