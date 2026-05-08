@@ -309,8 +309,12 @@
     for (const w of projection) {
       const tr = document.createElement('tr');
       tr.className = w.is_past ? 'past' : (w.is_current ? 'current' : 'future');
+      const recvProj = Number(w.receivables_projected || 0);
+      const recvHint = (w.is_future && initial.includeReceivablesInProjection && recvProj > 0)
+        ? `<span class="recv-hint" title="Recebíveis previstos nesta semana, somados à projeção de caixa">+ ${BRL.format(recvProj)} receb.</span>`
+        : '';
       const salesCell = w.is_future
-        ? `<input type="number" min="0" step="100" value="${Math.round(w.sales_projected)}" data-week="${w.week_id}" />`
+        ? `<input type="number" min="0" step="100" value="${Math.round(w.sales_projected)}" data-week="${w.week_id}" />${recvHint}`
         : BRL.format(w.sales_real);
       const costsCell = (w.is_past || w.is_current) ? BRL.format(w.costs_paid) : BRL.format(w.costs_planned);
       const adsCell = (w.is_past || w.is_current) ? BRL.format(w.ads_paid) : BRL.format(w.ads_planned);

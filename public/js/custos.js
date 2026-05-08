@@ -495,6 +495,42 @@
     });
   }
 
+  // === Receivables filter chips ===
+  (function setupReceivablesFilters() {
+    const chips = document.querySelectorAll('.receivables-filters .filter-chip');
+    const rows = document.querySelectorAll('.receivables-table tbody tr');
+    if (!chips.length || !rows.length) return;
+
+    function todayYmdLocal() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function matchesFilter(date, filter) {
+      if (filter === 'all') return true;
+      const today = todayYmdLocal();
+      if (filter === 'overdue') return date < today;
+      const days = Math.round((Date.parse(date + 'T00:00:00') - Date.parse(today + 'T00:00:00')) / 86400000);
+      if (filter === 'this-week') return days >= 0 && days <= 6;
+      if (filter === 'next-7') return days >= 0 && days <= 7;
+      if (filter === 'next-30') return days >= 0 && days <= 30;
+      if (filter === 'next-60') return days >= 0 && days <= 60;
+      return true;
+    }
+
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        chips.forEach((c) => c.classList.remove('is-active'));
+        chip.classList.add('is-active');
+        const filter = chip.dataset.filter;
+        rows.forEach((row) => {
+          if (!row.dataset.expectedDate) return;
+          row.style.display = matchesFilter(row.dataset.expectedDate, filter) ? '' : 'none';
+        });
+      });
+    });
+  })();
+
   // === Reverter para 'a pagar' ===
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-action="revert-paid"]');

@@ -120,6 +120,31 @@ router.get('/', requireAuth, requireTotp, (req, res) => {
   const pendingReceivables = receivables.list({ status: 'pending', from: today.slice(0, 4) + '-01-01', to: horizon60 })
     .sort((a, b) => a.expected_date.localeCompare(b.expected_date));
 
+  function dateAddDays(ymdStr, days) {
+    const d = new Date(ymdStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+  }
+  function sumAndCountInRange(items, fromDays, toDays) {
+    const start = dateAddDays(today, fromDays);
+    const end = dateAddDays(today, toDays);
+    const filtered = items.filter((r) => r.expected_date >= start && r.expected_date <= end);
+    return {
+      sum: filtered.reduce((acc, r) => acc + Number(r.expected_amount || 0), 0),
+      count: filtered.length,
+    };
+  }
+  const allPending60 = pendingReceivables.filter((r) => r.expected_date >= today && r.expected_date <= horizon60);
+  const recvSummary = {
+    thisWeek: sumAndCountInRange(allPending60, 0, 6),
+    nextWeek: sumAndCountInRange(allPending60, 7, 13),
+    in30: sumAndCountInRange(allPending60, 0, 30),
+    inWindow: {
+      sum: allPending60.reduce((a, r) => a + Number(r.expected_amount || 0), 0),
+      count: allPending60.length,
+    },
+  };
+
   const closers = team.list({ role: 'closer' });
   const adsByWeekRows = weeks.map((w) => ({
     week_id: w.week_id,
@@ -163,6 +188,7 @@ router.get('/', requireAuth, requireTotp, (req, res) => {
     recentSales,
     recentCosts,
     pendingReceivables,
+    recvSummary,
     totalWeeks,
     activeScenario,
     closers,

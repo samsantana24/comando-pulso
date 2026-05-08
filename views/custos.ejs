@@ -266,38 +266,87 @@
     </div>
   </section>
 
-  <section class="receivables-section">
-    <h3>Recebíveis pendentes <span class="muted">(próximos 60 dias)</span></h3>
-    <% if (pendingReceivables.length === 0) { %>
-      <p class="muted">Nenhum recebível pendente.</p>
-    <% } else { %>
-      <table class="rec-table">
-        <thead>
-          <tr>
-            <th>Data prevista</th>
-            <th class="num">Valor</th>
-            <th>Cliente</th>
-            <th>Método</th>
-            <th></th>
+  <section class="receivables-panel" id="receivables">
+    <div class="receivables-header">
+      <div>
+        <h2>Recebíveis</h2>
+        <span class="subtitle">Próximos 60 dias · clique numa linha pra ver detalhes</span>
+      </div>
+      <% if (userCan('action.export_data')) { %>
+        <button type="button" class="btn btn-ghost btn-small btn-with-icon" data-modal="export" data-export-default="receivables">
+          <%- include('partials/icons', { name: 'download' }) %><span>Exportar</span>
+        </button>
+      <% } %>
+    </div>
+
+    <div class="receivables-summary">
+      <div class="recv-mini-card <%= recvSummary.thisWeek.count > 0 ? 'is-current' : '' %>">
+        <div class="label">Esta semana</div>
+        <div class="value"><%= formatBrl(recvSummary.thisWeek.sum) %></div>
+        <div class="meta"><%= recvSummary.thisWeek.count %> conta(s)</div>
+      </div>
+      <div class="recv-mini-card">
+        <div class="label">Próxima semana</div>
+        <div class="value"><%= formatBrl(recvSummary.nextWeek.sum) %></div>
+        <div class="meta"><%= recvSummary.nextWeek.count %> conta(s)</div>
+      </div>
+      <div class="recv-mini-card">
+        <div class="label">Em 30 dias</div>
+        <div class="value"><%= formatBrl(recvSummary.in30.sum) %></div>
+        <div class="meta"><%= recvSummary.in30.count %> conta(s)</div>
+      </div>
+      <div class="recv-mini-card">
+        <div class="label">Total janela</div>
+        <div class="value"><%= formatBrl(recvSummary.inWindow.sum) %></div>
+        <div class="meta"><%= recvSummary.inWindow.count %> conta(s)</div>
+      </div>
+    </div>
+
+    <div class="receivables-filters">
+      <button type="button" class="filter-chip is-active" data-filter="all">Todos</button>
+      <button type="button" class="filter-chip" data-filter="overdue">Vencidos</button>
+      <button type="button" class="filter-chip" data-filter="this-week">Esta semana</button>
+      <button type="button" class="filter-chip" data-filter="next-7">Próximos 7d</button>
+      <button type="button" class="filter-chip" data-filter="next-30">Próximos 30d</button>
+      <button type="button" class="filter-chip" data-filter="next-60">Próximos 60d</button>
+    </div>
+
+    <table class="receivables-table">
+      <thead>
+        <tr>
+          <th>Vencimento</th>
+          <th>Cliente</th>
+          <th class="num">Valor</th>
+          <th>Pagamento</th>
+          <th class="actions-h">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for (const r of pendingReceivables) { %>
+          <% const isOverdue = r.expected_date < todayDate; %>
+          <tr data-receivable-id="<%= r.id %>" data-expected-date="<%= r.expected_date %>" class="<%= isOverdue ? 'overdue' : '' %>">
+            <td>
+              <%= formatDateShort(r.expected_date) %>
+              <% if (isOverdue) { %><span class="badge overdue-badge">VENCIDO</span><% } %>
+            </td>
+            <td><%= r.client_name || '—' %></td>
+            <td class="num"><%= formatBrl(r.expected_amount) %></td>
+            <td><%= r.payment_method ? formatPaymentMethod(r.payment_method) : '—' %></td>
+            <td class="actions-cell">
+              <% if (userCan('action.mark_received')) { %>
+                <button type="button" class="cell-action-btn pay" data-action="receive-receivable" data-id="<%= r.id %>" data-payload='<%- JSON.stringify(r) %>' title="Marcar recebido">✓</button>
+              <% } %>
+              <% if (userCan('action.delete_receivable')) { %>
+                <button type="button" class="cell-action-btn delete" data-action="delete-receivable" data-id="<%= r.id %>" title="Cancelar/excluir">×</button>
+              <% } %>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          <% for (const r of pendingReceivables) { %>
-            <% const overdue = r.expected_date < todayDate %>
-            <tr class="<%= overdue ? 'overdue' : '' %>">
-              <td><%= formatDateShort(r.expected_date) %><% if (overdue) { %> <span class="badge overdue-badge">vencido</span><% } %></td>
-              <td class="num"><strong><%= formatBrl(r.expected_amount) %></strong></td>
-              <td><%= r.client_name || '—' %></td>
-              <td><%= formatPaymentMethod(r.payment_method) %></td>
-              <td>
-                <button type="button" class="btn-link" data-action="receive-receivable" data-id="<%= r.id %>" data-payload='<%- JSON.stringify(r) %>'>marcar recebido</button>
-                <button type="button" class="btn-link danger" data-action="delete-receivable" data-id="<%= r.id %>">cancelar</button>
-              </td>
-            </tr>
-          <% } %>
-        </tbody>
-      </table>
-    <% } %>
+        <% } %>
+        <% if (pendingReceivables.length === 0) { %>
+          <tr><td colspan="5" class="muted center" style="padding: 32px;">Nenhuma conta a receber pendente.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
   </section>
 </main>
 
