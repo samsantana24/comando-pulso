@@ -4,16 +4,17 @@ const recurrence = require('../../db/queries/recurrence');
 const { expandRule } = require('../../lib/recurrence');
 const { audit } = require('../../lib/audit');
 const { isDateInRange, isPositive, MIN_DATE, MAX_DATE } = require('../../lib/validators');
+const { logWarn } = require('../../lib/log');
 
 const ADS_CATEGORY = 'Tráfego Pago (Google / Meta Ads)';
 const ADS_BLOCK_ERROR = "A categoria 'Tráfego Pago (Google / Meta Ads)' só pode ser lançada via 'Investimento em Ads'. Use o botão dedicado.";
 const DATE_ERR = `date deve ser entre ${MIN_DATE} e ${MAX_DATE} (YYYY-MM-DD)`;
 
-function rejectsAdsCategory(body) {
+function rejectsAdsCategory(body, req) {
   if (!body || !body.category) return false;
   if (body.category !== ADS_CATEGORY) {
     if (/ads|tráfego pago|trafego pago/i.test(String(body.category))) {
-      console.warn('[costs] categoria customizada com nome ads-like:', body.category);
+      logWarn(req, 'categoria customizada com nome ads-like', { category: body.category });
     }
     return false;
   }
@@ -39,7 +40,7 @@ router.post('/', (req, res) => {
   const isRecurring = b.is_recurring === true || b.is_recurring === 'true';
   if (!b.category) return res.status(400).json({ error: 'category é obrigatório' });
   if (!isPositive(b.amount)) return res.status(400).json({ error: 'amount deve ser > 0' });
-  if (rejectsAdsCategory(b)) return res.status(400).json({ error: ADS_BLOCK_ERROR });
+  if (rejectsAdsCategory(b, req)) return res.status(400).json({ error: ADS_BLOCK_ERROR });
 
   if (isRecurring) {
     if (!['monthly_day', 'every_n_weeks'].includes(b.recurrence_pattern)) {

@@ -65,8 +65,9 @@ app.use((req, res) => {
   res.status(404).render('error', { code: 404, message: 'Página não encontrada' });
 });
 
+const { logError } = require('./lib/log');
 app.use((err, req, res, next) => {
-  console.error('[comando-pulso] erro:', err.stack || err.message);
+  logError(req, err);
   if (req.path && req.path.startsWith('/api/')) {
     return res.status(500).json({ error: err.message || 'erro interno' });
   }

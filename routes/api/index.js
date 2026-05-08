@@ -19,8 +19,9 @@ router.use('/receivables', require('./receivables'));
 
 router.use((req, res) => res.status(404).json({ error: 'endpoint não encontrado' }));
 
+const { logError } = require('../../lib/log');
 router.use((err, req, res, next) => {
-  console.error('[api] erro:', err);
+  logError(req, err);
   res.status(500).json({ error: err.message || 'erro interno' });
 });
 
