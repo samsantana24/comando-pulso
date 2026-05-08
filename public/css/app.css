@@ -1254,11 +1254,11 @@ button, a, [role="button"], .scenario-item, [data-modal] {
 .pedrra .kpi-bar,
 .kpi-bar {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   margin: 32px 0;
 }
-.kpi-bar-6 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.kpi-bar-6 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .kpi-card {
   position: relative;
   padding: 24px 22px;
@@ -1325,14 +1325,17 @@ button, a, [role="button"], .scenario-item, [data-modal] {
 }
 .kpi-card-value {
   display: block;
-  font-size: clamp(26px, 2.4vw, 36px);
+  font-size: clamp(20px, 1.9vw, 28px);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--fg);
   font-family: var(--font-stack);
   font-feature-settings: 'tnum' 1, 'lnum' 1;
   font-variant-numeric: tabular-nums;
-  line-height: 1;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .kpi-card-value.strong { color: var(--fg); }
 .kpi-card-value.pos { color: var(--pos); -webkit-text-fill-color: var(--pos); background: none; }
