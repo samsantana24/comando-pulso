@@ -692,27 +692,79 @@ select {
 .badge.recur { background: rgba(45, 212, 191, 0.15); color: var(--accent); }
 
 dialog.modal {
-  width: min(560px, calc(100vw - 32px));
-  max-height: calc(100vh - 64px);
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  box-shadow: var(--shadow);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--fg);
+  max-width: 560px;
+  width: calc(100% - 48px);
+  max-height: calc(100vh - 80px);
 }
-dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); }
-dialog.modal h2 { margin: 0 0 16px 0; font-size: 20px; }
+dialog.modal::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  animation: backdropIn var(--duration) var(--ease-pulso);
+}
+dialog.modal[open] {
+  animation: modalIn var(--duration) var(--ease-pulso);
+}
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+dialog.modal form {
+  background: var(--bg-card);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  box-shadow: var(--shadow-lg), var(--shadow-accent-glow);
+  position: relative;
+  overflow: hidden;
+}
+dialog.modal form::before,
+dialog.modal form::after {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  border: 1px solid var(--accent);
+  pointer-events: none;
+}
+dialog.modal form::before { top: 12px; left: 12px; border-right: 0; border-bottom: 0; }
+dialog.modal form::after { top: 12px; right: 12px; border-left: 0; border-bottom: 0; }
+dialog.modal h2 {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 24px 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
 dialog.modal .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
 }
 dialog.modal .modal-actions {
   display: flex;
+  gap: 12px;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 18px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
 }
 
 @media (max-width: 600px) {
