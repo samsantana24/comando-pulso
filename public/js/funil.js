@@ -51,7 +51,8 @@
     const avgCloser = closers.length > 0 ? closers.reduce((a, c) => a + c.conversion_pct, 0) / closers.length : 25;
     const vendasCall = Math.floor(callsRealizadas * (avgCloser / 100));
     const vendasForecast = Math.floor(callsRealizadas * (forecastBonus / 100));
-    const receitaBruta = vendasCall * ticket;
+    const vendasTotais = vendasCall + vendasForecast;
+    const receitaBruta = vendasTotais * ticket;
     const receitaLiquida = receitaBruta * (1 - taxa / 100);
 
     document.getElementById('leads_gerados').textContent = String(leads);
