@@ -30,6 +30,9 @@
         <% if (userCan('action.add_cost')) { %>
           <button type="button" class="btn btn-primary btn-with-icon" data-modal="custo"><%- include('partials/icons', { name: 'minus' }) %><span>Custo</span></button>
         <% } %>
+        <% if (userCan('action.add_cost')) { %>
+          <button type="button" class="btn btn-ghost btn-with-icon" data-modal="custo-parcelado"><%- include('partials/icons', { name: 'refresh' }) %><span>Custo parcelado</span></button>
+        <% } %>
         <% if (userCan('action.add_recurring_cost')) { %>
           <button type="button" class="btn btn-ghost btn-with-icon" data-modal="recorrente"><%- include('partials/icons', { name: 'refresh' }) %><span>Custo recorrente</span></button>
         <% } %>

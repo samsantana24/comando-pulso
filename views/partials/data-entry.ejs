@@ -115,6 +115,59 @@
   </form>
 </dialog>
 
+<dialog id="modal-custo-parcelado" class="modal">
+  <form id="form-custo-parcelado">
+    <h2>Custo parcelado</h2>
+    <p class="muted">Cria N custos independentes a partir de um total. Edição manual de cada data é permitida.</p>
+    <label class="form-label">Categoria
+      <input list="categorias-list" name="category" required placeholder="Selecione ou digite uma nova" />
+    </label>
+    <label class="form-label">Descrição
+      <input type="text" name="description" placeholder='ex: Lays - mar/abr/mai/jun' />
+    </label>
+    <div class="form-row">
+      <label class="form-label">Valor TOTAL (R$)
+        <input type="number" name="total_amount" step="0.01" min="0" required />
+      </label>
+      <label class="form-label">Nº de parcelas
+        <input type="number" name="installments_count" min="2" max="36" value="2" required />
+      </label>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Data da 1ª parcela
+        <input type="date" name="first_date" value="<%= today %>" required />
+      </label>
+      <label class="form-label">Frequência
+        <select name="frequency">
+          <option value="monthly" selected>Mensal (mesmo dia do mês)</option>
+          <option value="biweekly">Quinzenal (a cada 14 dias)</option>
+          <option value="weekly">Semanal (a cada 7 dias)</option>
+          <option value="custom">Custom (datas manuais)</option>
+        </select>
+      </label>
+    </div>
+    <div class="parcel-preview" id="parcel-preview">
+      <div class="parcel-preview-head">
+        <span>Pré-visualização das parcelas</span>
+        <span class="parcel-sum-check" id="parcel-sum-check"></span>
+      </div>
+      <ul class="parcel-list" id="parcel-list"></ul>
+    </div>
+    <label class="form-label">Cenário (opcional)
+      <select name="scenario_id">
+        <option value="">Realidade (todos cenários)</option>
+        <% if (activeScenario) { %>
+          <option value="<%= activeScenario.id %>">Apenas neste (<%= activeScenario.name %>)</option>
+        <% } %>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary" id="btn-submit-parcelado">Criar parcelas</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="modal-recorrente" class="modal">
   <form class="api-form" data-endpoint="/api/costs" data-method="POST">
     <input type="hidden" name="is_recurring" value="true" />

@@ -243,4 +243,146 @@
       }
     });
   }
+
+  // === Custo parcelado: pré-visualização dinâmica + submit ===
+  const formParcelado = document.getElementById('form-custo-parcelado');
+  if (formParcelado) {
+    const totalInput = formParcelado.querySelector('input[name="total_amount"]');
+    const countInput = formParcelado.querySelector('input[name="installments_count"]');
+    const firstDateInput = formParcelado.querySelector('input[name="first_date"]');
+    const freqSelect = formParcelado.querySelector('select[name="frequency"]');
+    const list = document.getElementById('parcel-list');
+    const sumCheck = document.getElementById('parcel-sum-check');
+    const submitBtn = document.getElementById('btn-submit-parcelado');
+
+    let parcels = [];
+
+    function addMonths(ymd, n) {
+      const [y, m, d] = ymd.split('-').map(Number);
+      const dt = new Date(Date.UTC(y, m - 1 + n, d));
+      const yy = dt.getUTCFullYear();
+      const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(dt.getUTCDate()).padStart(2, '0');
+      return yy + '-' + mm + '-' + dd;
+    }
+    function addDays(ymd, n) {
+      const [y, m, d] = ymd.split('-').map(Number);
+      const dt = new Date(Date.UTC(y, m - 1, d + n));
+      return dt.toISOString().slice(0, 10);
+    }
+
+    function generateDates(firstDate, count, freq) {
+      const out = [];
+      for (let i = 0; i < count; i++) {
+        if (freq === 'monthly') out.push(addMonths(firstDate, i));
+        else if (freq === 'biweekly') out.push(addDays(firstDate, i * 14));
+        else if (freq === 'weekly') out.push(addDays(firstDate, i * 7));
+        else out.push(addDays(firstDate, i));
+      }
+      return out;
+    }
+
+    function distributeAmount(total, count) {
+      if (count <= 0) return [];
+      const cents = Math.round(total * 100);
+      const base = Math.floor(cents / count);
+      const remainder = cents - base * count;
+      const arr = new Array(count).fill(base);
+      arr[count - 1] += remainder;
+      return arr.map((c) => c / 100);
+    }
+
+    function regenerate() {
+      const total = Number(totalInput.value) || 0;
+      const count = Math.max(2, Math.min(36, Number(countInput.value) || 2));
+      const firstDate = firstDateInput.value;
+      const freq = freqSelect.value;
+      if (!firstDate || total <= 0) {
+        parcels = [];
+        list.innerHTML = '<li class="muted">Preencha valor total, nº de parcelas e data da 1ª.</li>';
+        sumCheck.textContent = '';
+        if (submitBtn) submitBtn.textContent = 'Criar parcelas';
+        return;
+      }
+      const dates = generateDates(firstDate, count, freq);
+      const amounts = distributeAmount(total, count);
+      parcels = dates.map((date, i) => ({ date, amount: amounts[i] }));
+      renderList();
+      updateSumCheck();
+      if (submitBtn) submitBtn.textContent = 'Criar ' + count + ' parcelas';
+    }
+
+    function renderList() {
+      list.innerHTML = parcels.map((p, i) => {
+        const idx = i + 1;
+        const total = parcels.length;
+        return '<li class="parcel-item">' +
+          '<span class="parcel-num">Parcela ' + idx + '/' + total + '</span>' +
+          '<input type="date" class="parcel-date-input" value="' + p.date + '" data-idx="' + i + '" min="2025-01-01" max="2030-12-31" />' +
+          '<span class="parcel-amount">' + BRL.format(p.amount) + '</span>' +
+          '</li>';
+      }).join('');
+      list.querySelectorAll('.parcel-date-input').forEach((inp) => {
+        inp.addEventListener('change', () => {
+          const i = Number(inp.dataset.idx);
+          if (parcels[i]) parcels[i].date = inp.value;
+        });
+      });
+    }
+
+    function updateSumCheck() {
+      const total = Number(totalInput.value) || 0;
+      const sum = parcels.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+      const diff = Math.abs(sum - total);
+      if (diff < 0.005) {
+        sumCheck.textContent = 'Soma das parcelas: ' + BRL.format(sum) + ' ✓';
+        sumCheck.className = 'parcel-sum-check ok';
+      } else {
+        sumCheck.textContent = 'Soma: ' + BRL.format(sum) + ' (esperado ' + BRL.format(total) + ')';
+        sumCheck.className = 'parcel-sum-check err';
+      }
+    }
+
+    [totalInput, countInput, firstDateInput, freqSelect].forEach((el) => {
+      if (!el) return;
+      el.addEventListener('input', regenerate);
+      el.addEventListener('change', regenerate);
+    });
+
+    formParcelado.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!parcels || parcels.length < 2) {
+        window.toast('Preencha os campos para gerar as parcelas');
+        return;
+      }
+      const data = Object.fromEntries(new FormData(formParcelado));
+      const payload = {
+        category: data.category,
+        description: data.description || null,
+        total_amount: Number(data.total_amount),
+        installments: parcels.map((p) => ({ date: p.date, amount: Number(p.amount) })),
+        scenario_id: data.scenario_id || null,
+      };
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        const res = await fetch('/api/costs/installments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          window.toast('Erro: ' + (err.error || ('HTTP ' + res.status)));
+          return;
+        }
+        window.location.reload();
+      } catch (err) {
+        window.toast('Erro: ' + err.message);
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+
+    regenerate();
+  }
 })();

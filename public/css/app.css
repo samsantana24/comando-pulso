@@ -2012,3 +2012,57 @@ body.values-hidden .kpi-card-value::after { content: ''; }
 
 .btn-with-icon { display: inline-flex; align-items: center; gap: 6px; }
 .btn-with-icon svg { flex-shrink: 0; }
+
+/* ============ Custos parcelados — preview ============ */
+.parcel-preview {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 8px 0 4px;
+}
+.parcel-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.parcel-sum-check { font-weight: 700; }
+.parcel-sum-check.ok { color: var(--pos); }
+.parcel-sum-check.err { color: var(--neg); }
+.parcel-list {
+  list-style: none;
+  margin: 0; padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.parcel-item {
+  display: grid;
+  grid-template-columns: 110px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.parcel-num { color: var(--muted); font-weight: 600; }
+.parcel-date-input {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--fg);
+  padding: 4px 6px;
+  font-family: inherit;
+  font-size: 12px;
+}
+.parcel-date-input:focus { outline: none; border-color: var(--accent); }
+.parcel-amount { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--fg); }

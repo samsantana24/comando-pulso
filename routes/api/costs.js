@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const db = require('../../db/connection');
 const costs = require('../../db/queries/costs');
 const recurrence = require('../../db/queries/recurrence');
 const { expandRule } = require('../../lib/recurrence');
@@ -104,6 +105,61 @@ router.post('/', requirePerm('action.add_cost'), (req, res) => {
   );
   audit(req, 'CREATE', 'cost', created.id, null, created);
   res.status(201).json(created);
+});
+
+router.post('/installments', requirePerm('action.add_cost'), (req, res) => {
+  const b = req.body || {};
+  if (!b.category) return res.status(400).json({ error: 'category é obrigatório' });
+  if (rejectsAdsCategory(b, req)) return res.status(400).json({ error: ADS_BLOCK_ERROR });
+  const totalAmount = Number(b.total_amount);
+  if (!isPositive(totalAmount)) return res.status(400).json({ error: 'total_amount deve ser > 0' });
+  const arr = Array.isArray(b.installments) ? b.installments : [];
+  if (arr.length < 2 || arr.length > 36) {
+    return res.status(400).json({ error: 'installments deve ter entre 2 e 36 itens' });
+  }
+  for (let i = 0; i < arr.length; i++) {
+    const it = arr[i];
+    if (!it || !isDateInRange(it.date)) {
+      return res.status(400).json({ error: `parcela ${i + 1}: date inválida (` + DATE_ERR + ')' });
+    }
+    if (!isPositive(it.amount)) {
+      return res.status(400).json({ error: `parcela ${i + 1}: amount deve ser > 0` });
+    }
+  }
+  const sum = arr.reduce((acc, it) => acc + Number(it.amount), 0);
+  if (Math.abs(sum - totalAmount) > 0.01) {
+    return res.status(400).json({ error: `soma das parcelas (${sum.toFixed(2)}) difere de total_amount (${totalAmount.toFixed(2)})` });
+  }
+  const scenarioId = b.scenario_id ? Number(b.scenario_id) : null;
+  const total = arr.length;
+  const baseDesc = b.description ? String(b.description) : '';
+  const createdAll = db.transaction(() => {
+    const out = [];
+    for (let i = 0; i < arr.length; i++) {
+      const it = arr[i];
+      const desc = baseDesc
+        ? baseDesc + ' · parcela ' + (i + 1) + '/' + total
+        : 'Parcela ' + (i + 1) + '/' + total;
+      const c = costs.create({
+        date: it.date,
+        amount: Number(it.amount),
+        category: b.category,
+        description: desc,
+        status: 'planned',
+        scenario_id: scenarioId,
+      }, req.user.email);
+      out.push(c);
+    }
+    return out;
+  })();
+  audit(req, 'CREATE', 'cost_installments', null, null, {
+    total_amount: totalAmount,
+    installments_count: total,
+    category: b.category,
+    description: baseDesc || null,
+    cost_ids: createdAll.map((c) => c.id),
+  });
+  res.status(201).json({ ok: true, costs: createdAll });
 });
 
 router.patch('/:id', requirePerm('action.edit_cost'), (req, res) => {
