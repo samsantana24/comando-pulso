@@ -2,6 +2,7 @@ const router = require('express').Router();
 const db = require('../../db/connection');
 const { weekRangeFromDate, ymd, weekIdFromSunday, weekLabel } = require('../../lib/weeks');
 const { audit } = require('../../lib/audit');
+const { requireMaster } = require('../../lib/auth');
 
 const ADS_CATEGORY = 'Tráfego Pago (Google / Meta Ads)';
 const isYmd = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
@@ -40,7 +41,7 @@ router.get('/', (req, res) => {
   res.json(Array.from(byWeek.values()).sort((a, b) => a.sun.localeCompare(b.sun)));
 });
 
-router.post('/', (req, res) => {
+router.post('/', requireMaster, (req, res) => {
   const b = req.body || {};
   const total = Number(b.total_amount);
   if (!Number.isFinite(total) || total < 0) {
@@ -86,7 +87,7 @@ router.post('/', (req, res) => {
   });
 });
 
-router.delete('/', (req, res) => {
+router.delete('/', requireMaster, (req, res) => {
   const { week_start_date, scenario_id } = req.query;
   if (!isYmd(week_start_date)) return res.status(400).json({ error: 'week_start_date inválido' });
   const sunDate = weekRangeFromDate(week_start_date).sun;
