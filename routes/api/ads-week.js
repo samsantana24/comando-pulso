@@ -3,9 +3,10 @@ const db = require('../../db/connection');
 const { weekRangeFromDate, ymd, weekIdFromSunday, weekLabel } = require('../../lib/weeks');
 const { audit } = require('../../lib/audit');
 const { requireMaster } = require('../../lib/auth');
+const { isDateInRange, isNonNegative, MIN_DATE, MAX_DATE } = require('../../lib/validators');
 
 const ADS_CATEGORY = 'Tráfego Pago (Google / Meta Ads)';
-const isYmd = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+const DATE_ERR = `date deve ser entre ${MIN_DATE} e ${MAX_DATE} (YYYY-MM-DD)`;
 
 router.get('/', (req, res) => {
   const { from, to, scenario_id } = req.query;
@@ -43,13 +44,13 @@ router.get('/', (req, res) => {
 
 router.post('/', requireMaster, (req, res) => {
   const b = req.body || {};
-  const total = Number(b.total_amount);
-  if (!Number.isFinite(total) || total < 0) {
-    return res.status(400).json({ error: 'total_amount inválido' });
+  if (!isNonNegative(b.total_amount)) {
+    return res.status(400).json({ error: 'total_amount deve ser >= 0' });
   }
+  const total = Number(b.total_amount);
   const seedDate = b.week_start_date || b.date;
-  if (!isYmd(seedDate)) {
-    return res.status(400).json({ error: 'week_start_date (ou date) é obrigatório no formato YYYY-MM-DD' });
+  if (!isDateInRange(seedDate)) {
+    return res.status(400).json({ error: 'week_start_date: ' + DATE_ERR });
   }
   const sunDate = weekRangeFromDate(seedDate).sun;
   const startD = ymd(sunDate);
@@ -89,7 +90,7 @@ router.post('/', requireMaster, (req, res) => {
 
 router.delete('/', requireMaster, (req, res) => {
   const { week_start_date, scenario_id } = req.query;
-  if (!isYmd(week_start_date)) return res.status(400).json({ error: 'week_start_date inválido' });
+  if (!isDateInRange(week_start_date)) return res.status(400).json({ error: 'week_start_date: ' + DATE_ERR });
   const sunDate = weekRangeFromDate(week_start_date).sun;
   const startD = ymd(sunDate);
   const endD = ymd(new Date(sunDate.getFullYear(), sunDate.getMonth(), sunDate.getDate() + 6));

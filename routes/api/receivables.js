@@ -3,8 +3,9 @@ const db = require('../../db/connection');
 const receivables = require('../../db/queries/receivables');
 const sales = require('../../db/queries/sales');
 const { audit } = require('../../lib/audit');
+const { isDateInRange, isPositive, isNonNegative, MIN_DATE, MAX_DATE } = require('../../lib/validators');
 
-const isYmd = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+const DATE_ERR = `date deve ser entre ${MIN_DATE} e ${MAX_DATE} (YYYY-MM-DD)`;
 
 router.get('/', (req, res) => {
   const { status, from, to } = req.query;
@@ -13,9 +14,9 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   const b = req.body || {};
-  if (!isYmd(b.expected_date)) return res.status(400).json({ error: 'expected_date inválido' });
+  if (!isDateInRange(b.expected_date)) return res.status(400).json({ error: 'expected_date: ' + DATE_ERR });
+  if (!isPositive(b.expected_amount)) return res.status(400).json({ error: 'expected_amount deve ser > 0' });
   const amount = Number(b.expected_amount);
-  if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: 'expected_amount inválido' });
   const created = receivables.create(b, req.user.email);
   audit(req, 'CREATE', 'receivable', created.id, null, created);
   res.status(201).json(created);
@@ -23,18 +24,16 @@ router.post('/', (req, res) => {
 
 router.post('/sale-with-installments', (req, res) => {
   const b = req.body || {};
-  if (!isYmd(b.date)) return res.status(400).json({ error: 'date inválida' });
+  if (!isDateInRange(b.date)) return res.status(400).json({ error: DATE_ERR });
+  if (!isNonNegative(b.gross_amount)) return res.status(400).json({ error: 'gross_amount deve ser >= 0' });
+  if (!isNonNegative(b.net_amount)) return res.status(400).json({ error: 'net_amount deve ser >= 0' });
   const grossAmount = Number(b.gross_amount);
   const netAmount = Number(b.net_amount);
-  if (!Number.isFinite(grossAmount) || grossAmount < 0) return res.status(400).json({ error: 'gross_amount inválido' });
-  if (!Number.isFinite(netAmount) || netAmount < 0) return res.status(400).json({ error: 'net_amount inválido' });
   if (!Array.isArray(b.installments)) return res.status(400).json({ error: 'installments deve ser array' });
 
   for (const inst of b.installments) {
-    if (!isYmd(inst.expected_date)) return res.status(400).json({ error: 'parcela com expected_date inválido' });
-    if (!Number.isFinite(Number(inst.expected_amount)) || Number(inst.expected_amount) <= 0) {
-      return res.status(400).json({ error: 'parcela com expected_amount inválido' });
-    }
+    if (!isDateInRange(inst.expected_date)) return res.status(400).json({ error: 'parcela: expected_date deve estar entre ' + MIN_DATE + ' e ' + MAX_DATE });
+    if (!isPositive(inst.expected_amount)) return res.status(400).json({ error: 'parcela: expected_amount deve ser > 0' });
   }
 
   const tx = db.transaction(() => {
@@ -77,8 +76,11 @@ router.patch('/:id', (req, res) => {
   for (const k of ['expected_date', 'expected_amount', 'payment_method', 'status', 'client_name', 'notes']) {
     if (k in req.body) fields[k] = req.body[k];
   }
-  if (fields.expected_date && !isYmd(fields.expected_date)) return res.status(400).json({ error: 'expected_date inválido' });
-  if ('expected_amount' in fields) fields.expected_amount = Number(fields.expected_amount);
+  if (fields.expected_date && !isDateInRange(fields.expected_date)) return res.status(400).json({ error: 'expected_date: ' + DATE_ERR });
+  if ('expected_amount' in fields) {
+    if (!isPositive(fields.expected_amount)) return res.status(400).json({ error: 'expected_amount deve ser > 0' });
+    fields.expected_amount = Number(fields.expected_amount);
+  }
   if ('status' in fields && !['pending', 'received', 'cancelled'].includes(fields.status)) {
     return res.status(400).json({ error: 'status inválido' });
   }
@@ -93,11 +95,11 @@ router.post('/:id/mark-received', (req, res) => {
   if (!before) return res.status(404).json({ error: 'recebível não encontrado' });
   if (before.status !== 'pending') return res.status(400).json({ error: 'recebível não está pending' });
 
-  const receivedDate = req.body.received_date && isYmd(req.body.received_date)
+  const receivedDate = req.body.received_date && isDateInRange(req.body.received_date)
     ? req.body.received_date
     : before.expected_date;
+  if (!isNonNegative(req.body.net_amount ?? before.expected_amount)) return res.status(400).json({ error: 'net_amount deve ser >= 0' });
   const netAmount = Number(req.body.net_amount ?? before.expected_amount);
-  if (!Number.isFinite(netAmount) || netAmount < 0) return res.status(400).json({ error: 'net_amount inválido' });
 
   const tx = db.transaction(() => {
     const newSale = sales.create({

@@ -1,9 +1,9 @@
 const router = require('express').Router();
 const sales = require('../../db/queries/sales');
 const { audit } = require('../../lib/audit');
+const { isDateInRange, isNonNegative, MIN_DATE, MAX_DATE } = require('../../lib/validators');
 
-const isYmd = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
-const isNonNegative = (n) => { const x = Number(n); return Number.isFinite(x) && x >= 0; };
+const DATE_ERR = `date deve ser entre ${MIN_DATE} e ${MAX_DATE} (YYYY-MM-DD)`;
 
 router.get('/', (req, res) => {
   const { from, to, limit } = req.query;
@@ -16,9 +16,9 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   const b = req.body;
-  if (!isYmd(b.date)) return res.status(400).json({ error: 'date inválida (YYYY-MM-DD)' });
-  if (!isNonNegative(b.gross_amount)) return res.status(400).json({ error: 'gross_amount inválido' });
-  if (!isNonNegative(b.net_amount)) return res.status(400).json({ error: 'net_amount inválido' });
+  if (!isDateInRange(b.date)) return res.status(400).json({ error: DATE_ERR });
+  if (!isNonNegative(b.gross_amount)) return res.status(400).json({ error: 'gross_amount deve ser >= 0' });
+  if (!isNonNegative(b.net_amount)) return res.status(400).json({ error: 'net_amount deve ser >= 0' });
 
   const created = sales.create(
     {
@@ -45,9 +45,15 @@ router.patch('/:id', (req, res) => {
   for (const k of ['date', 'gross_amount', 'net_amount', 'client_name', 'closer_id', 'payment_method', 'notes']) {
     if (k in req.body) fields[k] = req.body[k];
   }
-  if (fields.date && !isYmd(fields.date)) return res.status(400).json({ error: 'date inválida' });
-  if ('gross_amount' in fields) fields.gross_amount = Number(fields.gross_amount);
-  if ('net_amount' in fields) fields.net_amount = Number(fields.net_amount);
+  if (fields.date && !isDateInRange(fields.date)) return res.status(400).json({ error: DATE_ERR });
+  if ('gross_amount' in fields) {
+    if (!isNonNegative(fields.gross_amount)) return res.status(400).json({ error: 'gross_amount deve ser >= 0' });
+    fields.gross_amount = Number(fields.gross_amount);
+  }
+  if ('net_amount' in fields) {
+    if (!isNonNegative(fields.net_amount)) return res.status(400).json({ error: 'net_amount deve ser >= 0' });
+    fields.net_amount = Number(fields.net_amount);
+  }
   if ('closer_id' in fields) fields.closer_id = fields.closer_id ? Number(fields.closer_id) : null;
 
   const updated = sales.update(id, fields);

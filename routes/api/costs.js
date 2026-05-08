@@ -3,12 +3,11 @@ const costs = require('../../db/queries/costs');
 const recurrence = require('../../db/queries/recurrence');
 const { expandRule } = require('../../lib/recurrence');
 const { audit } = require('../../lib/audit');
+const { isDateInRange, isPositive, MIN_DATE, MAX_DATE } = require('../../lib/validators');
 
 const ADS_CATEGORY = 'Tráfego Pago (Google / Meta Ads)';
 const ADS_BLOCK_ERROR = "A categoria 'Tráfego Pago (Google / Meta Ads)' só pode ser lançada via 'Investimento em Ads'. Use o botão dedicado.";
-
-const isYmd = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
-const isNonNegative = (n) => { const x = Number(n); return Number.isFinite(x) && x >= 0; };
+const DATE_ERR = `date deve ser entre ${MIN_DATE} e ${MAX_DATE} (YYYY-MM-DD)`;
 
 function rejectsAdsCategory(body) {
   if (!body || !body.category) return false;
@@ -39,7 +38,7 @@ router.post('/', (req, res) => {
   const b = req.body;
   const isRecurring = b.is_recurring === true || b.is_recurring === 'true';
   if (!b.category) return res.status(400).json({ error: 'category é obrigatório' });
-  if (!isNonNegative(b.amount)) return res.status(400).json({ error: 'amount inválido' });
+  if (!isPositive(b.amount)) return res.status(400).json({ error: 'amount deve ser > 0' });
   if (rejectsAdsCategory(b)) return res.status(400).json({ error: ADS_BLOCK_ERROR });
 
   if (isRecurring) {
@@ -50,8 +49,8 @@ router.post('/', (req, res) => {
     if (!Number.isFinite(recValue) || recValue < 1) {
       return res.status(400).json({ error: 'recurrence_value inválido' });
     }
-    if (!isYmd(b.recurrence_start)) return res.status(400).json({ error: 'recurrence_start inválido' });
-    if (b.recurrence_end && !isYmd(b.recurrence_end)) return res.status(400).json({ error: 'recurrence_end inválido' });
+    if (!isDateInRange(b.recurrence_start)) return res.status(400).json({ error: 'recurrence_start: ' + DATE_ERR });
+    if (b.recurrence_end && !isDateInRange(b.recurrence_end)) return res.status(400).json({ error: 'recurrence_end: ' + DATE_ERR });
 
     const rule = recurrence.create(
       {
@@ -88,7 +87,7 @@ router.post('/', (req, res) => {
     return res.status(201).json({ rule, occurrences: created });
   }
 
-  if (!isYmd(b.date)) return res.status(400).json({ error: 'date inválida (YYYY-MM-DD)' });
+  if (!isDateInRange(b.date)) return res.status(400).json({ error: DATE_ERR });
   const status = b.status === 'paid' ? 'paid' : 'planned';
   const created = costs.create(
     {
@@ -114,8 +113,11 @@ router.patch('/:id', (req, res) => {
   for (const k of ['date', 'amount', 'category', 'description', 'status', 'scenario_id']) {
     if (k in req.body) fields[k] = req.body[k];
   }
-  if (fields.date && !isYmd(fields.date)) return res.status(400).json({ error: 'date inválida' });
-  if ('amount' in fields) fields.amount = Number(fields.amount);
+  if (fields.date && !isDateInRange(fields.date)) return res.status(400).json({ error: DATE_ERR });
+  if ('amount' in fields) {
+    if (!isPositive(fields.amount)) return res.status(400).json({ error: 'amount deve ser > 0' });
+    fields.amount = Number(fields.amount);
+  }
   if ('scenario_id' in fields) fields.scenario_id = fields.scenario_id ? Number(fields.scenario_id) : null;
   if ('status' in fields && !['paid', 'planned'].includes(fields.status)) {
     return res.status(400).json({ error: 'status inválido' });
