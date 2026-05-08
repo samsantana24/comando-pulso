@@ -193,13 +193,49 @@ function runMigrations(db) {
       ('financeiro', 'view.audit_log', 0),
       ('financeiro', 'view.scenarios_list', 0),
       ('financeiro', 'view.team', 1);
+
+    INSERT OR IGNORE INTO permissions (role, perm_key, allowed) VALUES
+      ('financeiro', 'action.export_data', 1);
   `);
 
   addColumnIfMissing(db, 'costs', 'is_ads', 'INTEGER DEFAULT 0');
   addColumnIfMissing(db, 'costs', 'from_initial_seed', 'INTEGER DEFAULT 0');
+  addColumnIfMissing(db, 'scenarios', 'evolutive_funnel_enabled', 'INTEGER DEFAULT 0');
+  addColumnIfMissing(db, 'scenarios', 'evolutive_funnel_weeks', 'INTEGER DEFAULT 12');
+
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_costs_is_ads ON costs(is_ads);
     CREATE INDEX IF NOT EXISTS idx_costs_from_seed ON costs(from_initial_seed);
+
+    CREATE TABLE IF NOT EXISTS scenario_funnel_weekly (
+      scenario_id INTEGER NOT NULL,
+      week_index INTEGER NOT NULL,
+      ads_per_week REAL DEFAULT 0,
+      cpl REAL DEFAULT 0,
+      rebarba_sb_per_week INTEGER DEFAULT 0,
+      show_rate_pct REAL DEFAULT 70,
+      call_to_sale_pct REAL DEFAULT 25,
+      forecast_bonus_pct REAL DEFAULT 5,
+      ticket_avg REAL DEFAULT 10000,
+      payment_tax_pct REAL DEFAULT 12,
+      PRIMARY KEY (scenario_id, week_index),
+      FOREIGN KEY (scenario_id) REFERENCES scenarios(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS scenario_team_weekly (
+      scenario_id INTEGER NOT NULL,
+      team_member_id INTEGER NOT NULL,
+      week_index INTEGER NOT NULL,
+      capacity_per_week REAL DEFAULT 0,
+      conversion_pct REAL DEFAULT 0,
+      active INTEGER DEFAULT 1,
+      PRIMARY KEY (scenario_id, team_member_id, week_index),
+      FOREIGN KEY (scenario_id) REFERENCES scenarios(id) ON DELETE CASCADE,
+      FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_funnel_weekly_scenario ON scenario_funnel_weekly(scenario_id);
+    CREATE INDEX IF NOT EXISTS idx_team_weekly_scenario ON scenario_team_weekly(scenario_id);
   `);
 }
 
