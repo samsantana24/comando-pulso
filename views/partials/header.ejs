@@ -1,24 +1,35 @@
 <header class="app-header">
   <div class="brand">
-    <span class="brand-dot"></span>
-    <span class="brand-name">Comando Pulso<% if (typeof title !== 'undefined') { %> · <%= title %><% } %></span>
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="24" height="24">
+        <path d="M2 12 L7 12 L9 6 L12 18 L15 9 L17 12 L22 12"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" fill="none" />
+      </svg>
+    </span>
+    <span class="brand-text">
+      <span class="brand-name">PULSO</span>
+      <span class="brand-divider">·</span>
+      <span class="brand-context"><%= (typeof title !== 'undefined' && title) ? title.toUpperCase() : 'COMANDO' %></span>
+    </span>
   </div>
   <% if (typeof user !== 'undefined' && user) { %>
+  <% const cp = (typeof currentPath !== 'undefined' ? currentPath : ''); %>
   <nav class="app-nav">
     <% if (user.role === 'master') { %>
-      <a href="/pedrra">PEDRRA</a>
+      <a href="/pedrra" class="<%= cp === '/pedrra' ? 'active' : '' %>">PEDRRA</a>
     <% } %>
-    <a href="/custos">Custos e Vendas</a>
+    <a href="/custos" class="<%= cp === '/custos' ? 'active' : '' %>">Custos e Vendas</a>
     <% if (user.role === 'master') { %>
-      <a href="/funil">Funil</a>
-      <a href="/configuracoes">Configurações</a>
+      <a href="/funil" class="<%= cp === '/funil' ? 'active' : '' %>">Funil</a>
+      <a href="/configuracoes" class="<%= cp === '/configuracoes' ? 'active' : '' %>">Configurações</a>
     <% } %>
   </nav>
   <% if (typeof scenarios !== 'undefined' && user.role === 'master') { %>
     <% const visibleIds = (typeof visibleScenarioIds !== 'undefined' && Array.isArray(visibleScenarioIds)) ? visibleScenarioIds : []; %>
     <div class="scenario-picker" data-component="scenario-picker">
       <button type="button" class="scenario-btn" data-toggle>
-        <span class="scenario-dot" style="background: <%= activeScenario ? activeScenario.color : '#94A3B8' %>"></span>
+        <span class="scenario-dot" style="background: <%= activeScenario ? activeScenario.color : '#94A3B8' %>; color: <%= activeScenario ? activeScenario.color : '#94A3B8' %>"></span>
         <span><%= activeScenario ? activeScenario.name : 'Sem cenário' %></span>
         <span class="caret">▾</span>
       </button>
@@ -27,7 +38,7 @@
           <% for (const s of scenarios) { %>
             <li class="scenario-item <%= s.is_active ? 'active' : '' %>" data-id="<%= s.id %>">
               <button type="button" class="scenario-pick" data-action="activate" data-id="<%= s.id %>">
-                <span class="scenario-dot" style="background: <%= s.color %>"></span>
+                <span class="scenario-dot" style="background: <%= s.color %>; color: <%= s.color %>"></span>
                 <span class="scenario-name"><%= s.name %></span>
                 <% if (s.is_active) { %><span class="active-flag">ativo</span><% } %>
               </button>
@@ -52,6 +63,7 @@
     </div>
   <% } %>
   <div class="user-menu">
+    <div class="user-avatar"><%= user.email.charAt(0).toUpperCase() %></div>
     <span class="user-email"><%= user.email %></span>
     <form method="POST" action="/logout" class="logout-form">
       <button type="submit" class="btn btn-ghost btn-small">Sair</button>

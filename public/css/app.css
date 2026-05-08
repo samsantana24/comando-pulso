@@ -196,95 +196,165 @@ strong { color: var(--text); }
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
 }
+.brand-mark {
+  color: var(--accent);
+  display: inline-flex;
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+.brand-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  font-size: 13px;
+}
+.brand-name { color: var(--fg); }
+.brand-divider { color: var(--dim); font-weight: 400; }
+.brand-context { color: var(--muted); font-weight: 600; }
 .brand-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 4px rgba(45, 212, 191, 0.18);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
-.brand-name { font-size: 16px; }
-.brand-large { font-size: 22px; margin-bottom: 4px; }
-.brand-large .brand-name { font-size: 22px; }
+.brand-large { font-size: 22px; }
+.brand-large .brand-name { font-size: 22px; letter-spacing: 0.16em; }
 
 .app-header {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 14px 28px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  gap: 32px;
+  padding: 18px 32px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 .app-header .brand { flex-shrink: 0; }
 .app-nav {
   display: flex;
-  gap: 18px;
+  gap: 4px;
   flex: 1;
-  margin-left: 12px;
 }
 .app-nav a {
-  color: var(--text);
-  font-weight: 500;
-  padding: 6px 10px;
-  border-radius: 6px;
+  position: relative;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  transition: color var(--duration-fast) var(--ease-pulso);
 }
-.app-nav a:hover { background: var(--surface-2); text-decoration: none; }
+.app-nav a:hover { color: var(--fg); text-decoration: none; }
+.app-nav a.active { color: var(--fg); }
+.app-nav a.active::after {
+  content: '';
+  position: absolute;
+  bottom: -19px;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
 .user-menu {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 12px;
 }
-.user-email { color: var(--muted); font-size: 13px; }
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--accent);
+}
+.user-email { color: var(--muted); font-size: 12px; font-weight: 500; }
 
 .scenario-picker { position: relative; }
 .scenario-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  background: var(--surface-2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  gap: 10px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  font-family: var(--font-stack);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--fg);
   cursor: pointer;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
+  transition: all var(--duration-fast) var(--ease-pulso);
 }
-.scenario-btn:hover { background: var(--bg); }
+.scenario-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--line-strong);
+}
 .scenario-btn .caret { color: var(--muted); }
-.scenario-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.scenario-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+  flex-shrink: 0;
+}
 .scenario-menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   right: 0;
-  width: 320px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  z-index: 100;
+  min-width: 320px;
+  background: rgba(14, 14, 15, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  z-index: 200;
   max-height: 70vh;
   overflow-y: auto;
+  animation: menuIn var(--duration) var(--ease-pulso);
 }
-.scenario-list { list-style: none; padding: 6px 0; margin: 0; }
-.scenario-item { padding: 6px 12px; }
-.scenario-item.active { background: rgba(45, 212, 191, 0.07); }
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.scenario-list { list-style: none; padding: 0; margin: 0; }
+.scenario-item {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+}
+.scenario-item:hover { background: rgba(255, 255, 255, 0.04); }
+.scenario-item.active { background: var(--accent-soft); }
 .scenario-pick {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: none;
   border: none;
-  color: var(--text);
+  color: var(--fg);
   cursor: pointer;
   padding: 4px 0;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
   text-align: left;
 }
 .scenario-pick:hover { color: var(--accent); }
@@ -292,17 +362,18 @@ strong { color: var(--text); }
 .active-flag {
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.12em;
   color: var(--accent);
-  background: rgba(45, 212, 191, 0.15);
-  padding: 1px 6px;
+  background: var(--accent-soft);
+  padding: 2px 8px;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: 800;
 }
 .scenario-actions { display: flex; gap: 10px; padding-top: 4px; padding-left: 18px; }
 .scenario-footer {
   padding: 8px 12px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
 }
 
 .logout-form { margin: 0; display: inline; }
