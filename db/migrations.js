@@ -120,12 +120,56 @@ function runMigrations(db) {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      group_name TEXT NOT NULL,
+      display_order INTEGER DEFAULT 0,
+      active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS receivables (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sale_id INTEGER,
+      expected_date TEXT NOT NULL,
+      expected_amount REAL NOT NULL,
+      payment_method TEXT,
+      status TEXT NOT NULL CHECK(status IN ('pending', 'received', 'cancelled')) DEFAULT 'pending',
+      client_name TEXT,
+      notes TEXT,
+      received_date TEXT,
+      received_sale_id INTEGER,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      created_by TEXT,
+      FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE SET NULL,
+      FOREIGN KEY (received_sale_id) REFERENCES sales(id) ON DELETE SET NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(date);
     CREATE INDEX IF NOT EXISTS idx_costs_date ON costs(date);
     CREATE INDEX IF NOT EXISTS idx_costs_scenario ON costs(scenario_id);
     CREATE INDEX IF NOT EXISTS idx_costs_status ON costs(status);
     CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_categories_group ON categories(group_name);
+    CREATE INDEX IF NOT EXISTS idx_categories_active ON categories(active);
+    CREATE INDEX IF NOT EXISTS idx_receivables_expected_date ON receivables(expected_date);
+    CREATE INDEX IF NOT EXISTS idx_receivables_status ON receivables(status);
   `);
+
+  addColumnIfMissing(db, 'costs', 'is_ads', 'INTEGER DEFAULT 0');
+  addColumnIfMissing(db, 'costs', 'from_initial_seed', 'INTEGER DEFAULT 0');
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_costs_is_ads ON costs(is_ads);`);
+}
+
+function addColumnIfMissing(db, table, columnName, columnDef) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  const exists = cols.some((c) => c.name === columnName);
+  if (!exists) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${columnName} ${columnDef}`);
+  }
 }
 
 module.exports = { runMigrations };

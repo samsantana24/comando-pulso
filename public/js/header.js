@@ -24,10 +24,38 @@
     return res.status === 204 ? null : res.json();
   }
 
+  async function saveVisibleScenarios() {
+    const ids = [];
+    root.querySelectorAll('input[data-action="visible-toggle"]').forEach((cb) => {
+      if (cb.checked && !cb.disabled) ids.push(Number(cb.dataset.id));
+    });
+    try {
+      await postJson('/api/settings', { pedrra_visible_scenario_ids: JSON.stringify(ids) }, 'PUT');
+    } catch (err) {
+      alert('Erro ao salvar visíveis: ' + err.message);
+    }
+  }
+
+  root.addEventListener('change', async (e) => {
+    if (e.target.matches('input[data-action="visible-toggle"]')) {
+      const checked = root.querySelectorAll('input[data-action="visible-toggle"]:checked:not(:disabled)').length;
+      if (checked > 3) {
+        e.target.checked = false;
+        alert('Máximo 3 cenários adicionais visíveis no gráfico.');
+        return;
+      }
+      await saveVisibleScenarios();
+      if (window.location.pathname.startsWith('/pedrra')) {
+        window.location.reload();
+      }
+    }
+  });
+
   root.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     const action = btn.dataset.action;
+    if (action === 'visible-toggle') return;
     const id = btn.dataset.id;
     const currentName = btn.dataset.name || '';
 

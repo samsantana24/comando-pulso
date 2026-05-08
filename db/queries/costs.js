@@ -11,7 +11,7 @@ const stmts = {
 
 const FIELDS = ['date', 'amount', 'category', 'description', 'status', 'recurrence_id', 'scenario_id'];
 
-function list({ from = null, to = null, scenarioId = undefined, status = null } = {}) {
+function list({ from = null, to = null, scenarioId = undefined, status = null, ads = 'all' } = {}) {
   const where = [];
   const params = [];
   if (from) {
@@ -31,6 +31,11 @@ function list({ from = null, to = null, scenarioId = undefined, status = null } 
   if (status) {
     where.push('status = ?');
     params.push(status);
+  }
+  if (ads === 'only') {
+    where.push('is_ads = 1');
+  } else if (ads === 'exclude') {
+    where.push('(is_ads = 0 OR is_ads IS NULL)');
   }
   const sql = `SELECT * FROM costs ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY date DESC, id DESC`;
   return db.prepare(sql).all(...params);

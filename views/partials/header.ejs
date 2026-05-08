@@ -15,6 +15,7 @@
     <% } %>
   </nav>
   <% if (typeof scenarios !== 'undefined' && user.role === 'master') { %>
+    <% const visibleIds = (typeof visibleScenarioIds !== 'undefined' && Array.isArray(visibleScenarioIds)) ? visibleScenarioIds : []; %>
     <div class="scenario-picker" data-component="scenario-picker">
       <button type="button" class="scenario-btn" data-toggle>
         <span class="scenario-dot" style="background: <%= activeScenario ? activeScenario.color : '#94A3B8' %>"></span>
@@ -30,6 +31,12 @@
                 <span class="scenario-name"><%= s.name %></span>
                 <% if (s.is_active) { %><span class="active-flag">ativo</span><% } %>
               </button>
+              <label class="visible-toggle" title="Mostrar no gráfico do PEDRRA">
+                <input type="checkbox" data-action="visible-toggle" data-id="<%= s.id %>"
+                  <%= s.is_active || (Array.isArray(visibleIds) && visibleIds.includes(s.id)) ? 'checked' : '' %>
+                  <%= s.is_active ? 'disabled' : '' %> />
+                <span class="muted">no gráfico</span>
+              </label>
               <div class="scenario-actions">
                 <button type="button" class="btn-link" data-action="duplicate" data-id="<%= s.id %>" data-name="<%- s.name.replace(/"/g, '&quot;') %>">duplicar</button>
                 <button type="button" class="btn-link" data-action="rename" data-id="<%= s.id %>" data-name="<%- s.name.replace(/"/g, '&quot;') %>">renomear</button>

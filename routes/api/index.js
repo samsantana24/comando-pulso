@@ -13,6 +13,9 @@ router.use('/cashflow', require('./cashflow'));
 router.use('/settings', require('./settings'));
 router.use('/audit', require('./audit'));
 router.use('/export', require('./export'));
+router.use('/categories', require('./categories'));
+router.use('/ads-week', require('./ads-week'));
+router.use('/receivables', require('./receivables'));
 
 router.use((req, res) => res.status(404).json({ error: 'endpoint não encontrado' }));
 

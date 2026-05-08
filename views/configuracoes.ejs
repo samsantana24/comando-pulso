@@ -1,10 +1,10 @@
-<%- include('partials/head', { title: title }) %>
-<%- include('partials/header', { title: title, user: user, scenarios: locals.scenarios, activeScenario: locals.activeScenario }) %>
+<%- include('partials/head', { title: title, assetVersion: locals.assetVersion }) %>
+<%- include('partials/header', { title: title, user: user, scenarios: locals.scenarios, activeScenario: locals.activeScenario, assetVersion: locals.assetVersion }) %>
 
 <main class="container settings-page">
 
   <section class="settings-card">
-    <h2>Saldo e configurações financeiras</h2>
+    <h2>Saldo e cálculos</h2>
     <form id="form-settings" class="settings-form">
       <label class="form-label">Saldo inicial em conta (R$)
         <input type="number" name="initial_cash_brl" min="0" step="0.01" value="<%= settings.initial_cash_brl || 0 %>" />
@@ -12,6 +12,14 @@
       <label class="checkbox-label">
         <input type="checkbox" name="include_initial_cash" value="1" <%= settings.include_initial_cash === '1' ? 'checked' : '' %> />
         Incluir saldo inicial no cálculo de caixa e runway
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="include_ads_in_runway" value="1" <%= settings.include_ads_in_runway === '1' ? 'checked' : '' %> />
+        Considerar Ads no cálculo do Saldo e Runway
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="include_receivables_in_projection" value="1" <%= settings.include_receivables_in_projection === '1' ? 'checked' : '' %> />
+        Incluir recebíveis na projeção de caixa do PEDRRA
       </label>
       <label class="form-label">Taxa de pagamento padrão (%)
         <input type="number" name="default_payment_tax_pct" min="0" max="100" step="0.1" value="<%= settings.default_payment_tax_pct || 12 %>" />
@@ -23,7 +31,7 @@
 
   <section class="settings-card">
     <h2>Time comercial</h2>
-    <p class="muted">SDRs e Closers que aparecem no funil de performance e como closer responsável nas vendas.</p>
+    <p class="muted">SDRs e Closers que aparecem no funil e como closer responsável nas vendas.</p>
     <form id="form-team-add" class="settings-form-inline">
       <input type="text" name="name" placeholder="Nome" required />
       <select name="role" required>
@@ -57,13 +65,22 @@
 
   <section class="settings-card">
     <h2>Categorias de custo</h2>
-    <p class="muted">Lista pré-cadastrada (editável via /api/settings em fase futura). Você pode digitar categorias livres ao lançar um custo.</p>
-    <div class="cat-groups">
-      <% for (const [grp, items] of Object.entries(categoriesByGroup)) { %>
+    <p class="muted">Organize as categorias por grupo. Renomear uma categoria atualiza automaticamente todos os custos que a usam.</p>
+    <button type="button" class="btn btn-primary btn-small" id="btn-new-category">+ Nova categoria</button>
+    <div class="cat-groups" id="cat-groups">
+      <% for (const grp of orderedGroups) { %>
         <div class="cat-group">
           <h3><%= grp %></h3>
-          <ul>
-            <% for (const item of items) { %><li><%= item %></li><% } %>
+          <ul class="cat-list">
+            <% for (const c of (categoriesGrouped[grp] || [])) { %>
+              <li data-id="<%= c.id %>">
+                <span class="cat-name"><%= c.name %></span>
+                <span class="cat-actions">
+                  <button type="button" class="btn-link" data-action="edit-category" data-id="<%= c.id %>" data-name="<%- c.name.replace(/"/g, '&quot;') %>" data-group="<%- c.group_name.replace(/"/g, '&quot;') %>">editar</button>
+                  <button type="button" class="btn-link danger" data-action="delete-category" data-id="<%= c.id %>" data-name="<%- c.name.replace(/"/g, '&quot;') %>">excluir</button>
+                </span>
+              </li>
+            <% } %>
           </ul>
         </div>
       <% } %>
@@ -102,6 +119,27 @@
   </section>
 
 </main>
+
+<dialog id="modal-category" class="modal">
+  <form id="form-category">
+    <h2 id="modal-cat-title">Nova categoria</h2>
+    <input type="hidden" name="id" />
+    <label class="form-label">Nome
+      <input type="text" name="name" required />
+    </label>
+    <label class="form-label">Grupo
+      <select name="group_name" required>
+        <% for (const g of groupOrder) { %>
+          <option value="<%= g %>"><%= g %></option>
+        <% } %>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</dialog>
 
 <script src="/js/configuracoes.js?v=<%= assetVersion %>"></script>
 <%- include('partials/footer') %>

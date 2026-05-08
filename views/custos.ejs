@@ -1,5 +1,5 @@
-<%- include('partials/head', { title: title }) %>
-<%- include('partials/header', { title: title, user: user, scenarios: locals.scenarios, activeScenario: locals.activeScenario }) %>
+<%- include('partials/head', { title: title, assetVersion: locals.assetVersion }) %>
+<%- include('partials/header', { title: title, user: user, scenarios: locals.scenarios, activeScenario: locals.activeScenario, assetVersion: locals.assetVersion }) %>
 
 <main class="container custos">
   <section class="toolbar">
@@ -19,6 +19,7 @@
       <button type="button" class="btn btn-primary" data-modal="venda">+ Venda</button>
       <button type="button" class="btn btn-primary" data-modal="custo">+ Custo</button>
       <button type="button" class="btn btn-ghost" data-modal="recorrente">+ Custo recorrente</button>
+      <button type="button" class="btn btn-warn" data-modal="ads">+ Investimento em Ads</button>
     </div>
   </section>
 
@@ -43,15 +44,47 @@
             <td class="amount <%= v > 0 ? 'pos' : '' %>"><%= v ? formatBrl(v) : '—' %></td>
           <% } %>
         </tr>
-        <% for (const cat of categoriesPresent) { %>
-          <tr>
-            <td><%= cat %></td>
+
+        <tr class="row-section ads-section">
+          <td colspan="<%= weeks.length + 1 %>">— INVESTIMENTO EM ADS —</td>
+        </tr>
+        <tr class="row-ads">
+          <td>Tráfego Pago (Google / Meta Ads)</td>
+          <% for (const w of weeks) { %>
+            <% const v = adsByWeek[w.week_id] || 0 %>
+            <td class="amount ads <%= v > 0 ? 'has' : '' %>"><%= v ? formatBrl(v) : '—' %></td>
+          <% } %>
+        </tr>
+        <tr class="row-subtotal ads-subtotal">
+          <td>Total Ads na semana</td>
+          <% for (const w of weeks) { %>
+            <% const v = adsByWeek[w.week_id] || 0 %>
+            <td class="amount ads"><%= formatBrl(v) %></td>
+          <% } %>
+        </tr>
+
+        <% for (const grp of orderedGroupsPresent) { %>
+          <tr class="row-section">
+            <td colspan="<%= weeks.length + 1 %>"><%= grp %></td>
+          </tr>
+          <% for (const cat of Object.keys(costsByGroup[grp]).sort()) { %>
+            <tr>
+              <td><%= cat %></td>
+              <% for (const w of weeks) { %>
+                <% const v = (costsByGroup[grp][cat] && costsByGroup[grp][cat][w.week_id]) || 0 %>
+                <td class="amount <%= v > 0 ? 'cost' : '' %>"><%= v ? formatBrl(v) : '—' %></td>
+              <% } %>
+            </tr>
+          <% } %>
+          <tr class="row-subtotal">
+            <td>Subtotal <%= grp %></td>
             <% for (const w of weeks) { %>
-              <% const v = (costsByCatWeek[cat] && costsByCatWeek[cat][w.week_id]) || 0 %>
-              <td class="amount <%= v > 0 ? 'cost' : '' %>"><%= v ? formatBrl(v) : '—' %></td>
+              <% const v = (subtotalByGroupWeek[grp] && subtotalByGroupWeek[grp][w.week_id]) || 0 %>
+              <td class="amount cost"><%= formatBrl(v) %></td>
             <% } %>
           </tr>
         <% } %>
+
         <tr class="row-saldo">
           <td>Saldo da semana</td>
           <% for (const w of weeks) { %>
@@ -61,8 +94,8 @@
         </tr>
       </tbody>
     </table>
-    <% if (categoriesPresent.length === 0 && Object.values(salesByWeek).every((v) => v === 0)) { %>
-      <p class="empty-hint muted">Sem lançamentos nesta janela. Comece adicionando uma venda ou um custo.</p>
+    <% if (orderedGroupsPresent.length === 0 && Object.values(salesByWeek).every((v) => v === 0) && Object.values(adsByWeek).every((v) => v === 0)) { %>
+      <p class="empty-hint muted">Sem lançamentos nesta janela. Comece adicionando uma venda, um custo ou um investimento em ads.</p>
     <% } %>
   </section>
 
@@ -118,6 +151,40 @@
       </ul>
     </div>
   </section>
+
+  <section class="receivables-section">
+    <h3>Recebíveis pendentes <span class="muted">(próximos 60 dias)</span></h3>
+    <% if (pendingReceivables.length === 0) { %>
+      <p class="muted">Nenhum recebível pendente.</p>
+    <% } else { %>
+      <table class="rec-table">
+        <thead>
+          <tr>
+            <th>Data prevista</th>
+            <th class="num">Valor</th>
+            <th>Cliente</th>
+            <th>Método</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const r of pendingReceivables) { %>
+            <% const overdue = r.expected_date < todayDate %>
+            <tr class="<%= overdue ? 'overdue' : '' %>">
+              <td><%= formatDateShort(r.expected_date) %><% if (overdue) { %> <span class="badge overdue-badge">vencido</span><% } %></td>
+              <td class="num"><strong><%= formatBrl(r.expected_amount) %></strong></td>
+              <td><%= r.client_name || '—' %></td>
+              <td><%= formatPaymentMethod(r.payment_method) %></td>
+              <td>
+                <button type="button" class="btn-link" data-action="receive-receivable" data-id="<%= r.id %>" data-payload='<%- JSON.stringify(r) %>'>marcar recebido</button>
+                <button type="button" class="btn-link danger" data-action="delete-receivable" data-id="<%= r.id %>">cancelar</button>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    <% } %>
+  </section>
 </main>
 
 <datalist id="categorias-list">
@@ -129,8 +196,14 @@
 </datalist>
 
 <dialog id="modal-venda" class="modal">
-  <form class="api-form" data-endpoint="/api/sales" data-method="POST">
+  <form class="api-form" data-endpoint="/api/sales" data-method="POST" id="form-venda">
     <h2>Nova venda</h2>
+
+    <div class="venda-mode-toggle">
+      <label class="radio-label"><input type="radio" name="venda_mode" value="paid" checked /> 100% paga hoje</label>
+      <label class="radio-label"><input type="radio" name="venda_mode" value="installments" /> Parcelada</label>
+    </div>
+
     <label class="form-label">Data
       <input type="date" name="date" value="<%= today %>" required />
     </label>
@@ -138,7 +211,7 @@
       <label class="form-label">Valor bruto (R$)
         <input type="number" name="gross_amount" step="0.01" min="0" required />
       </label>
-      <label class="form-label">Valor líquido (R$)
+      <label class="form-label">Valor líquido (R$) <span class="muted">(parte paga hoje)</span>
         <input type="number" name="net_amount" step="0.01" min="0" required />
       </label>
     </div>
@@ -169,6 +242,19 @@
     <label class="form-label">Observações
       <textarea name="notes" rows="2"></textarea>
     </label>
+
+    <div id="installments-block" hidden>
+      <h3>Parcelas futuras</h3>
+      <table class="installments-table">
+        <thead>
+          <tr><th>Data prevista</th><th class="num">Valor</th><th>Pagamento</th><th></th></tr>
+        </thead>
+        <tbody id="installments-tbody"></tbody>
+      </table>
+      <button type="button" class="btn btn-ghost btn-small" id="btn-add-installment">+ Adicionar parcela</button>
+      <p class="muted installments-summary" id="installments-summary"></p>
+    </div>
+
     <div class="modal-actions">
       <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
       <button type="submit" class="btn btn-primary">Salvar venda</button>
@@ -264,6 +350,32 @@
   </form>
 </dialog>
 
+<dialog id="modal-ads" class="modal">
+  <form id="form-ads">
+    <h2>Investimento em Ads (semanal)</h2>
+    <p class="muted">O valor será dividido em 7 dias da semana (dom→sáb). Lançar de novo na mesma semana sobrescreve.</p>
+    <label class="form-label">Semana (qualquer data dentro dela)
+      <input type="date" name="week_start_date" value="<%= today %>" required />
+    </label>
+    <label class="form-label">Valor da semana (R$)
+      <input type="number" name="total_amount" step="0.01" min="0" required />
+    </label>
+    <p class="ads-preview muted" id="ads-preview"></p>
+    <label class="form-label">Cenário
+      <select name="scenario_id">
+        <option value="">Realidade (todos cenários)</option>
+        <% if (activeScenario) { %>
+          <option value="<%= activeScenario.id %>">Apenas neste (<%= activeScenario.name %>)</option>
+        <% } %>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar investimento</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="modal-edit-sale" class="modal">
   <form class="api-form" data-endpoint="" data-method="PATCH">
     <h2>Editar venda</h2>
@@ -338,6 +450,24 @@
     <div class="modal-actions">
       <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
       <button type="submit" class="btn btn-primary">Salvar alterações</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="modal-receive" class="modal">
+  <form id="form-receive">
+    <h2>Marcar recebível como recebido</h2>
+    <input type="hidden" name="id" />
+    <label class="form-label">Data do recebimento
+      <input type="date" name="received_date" required />
+    </label>
+    <label class="form-label">Valor líquido recebido (R$) <span class="muted">(pode editar)</span>
+      <input type="number" name="net_amount" step="0.01" min="0" required />
+    </label>
+    <p class="muted" id="receive-preview"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Confirmar recebimento</button>
     </div>
   </form>
 </dialog>

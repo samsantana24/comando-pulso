@@ -12,6 +12,9 @@ router.put('/', requireMaster, (req, res) => {
     'initial_cash_brl',
     'include_initial_cash',
     'default_payment_tax_pct',
+    'include_ads_in_runway',
+    'include_receivables_in_projection',
+    'pedrra_visible_scenario_ids',
   ]);
   const body = req.body || {};
   const updates = {};

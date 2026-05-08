@@ -1,8 +1,17 @@
-<%- include('partials/head', { title: title }) %>
-<%- include('partials/header', { title: title, user: user, scenarios: locals.scenarios, activeScenario: locals.activeScenario }) %>
+<%- include('partials/head', { title: title, assetVersion: locals.assetVersion }) %>
+<%- include('partials/header', { title: title, user: user, scenarios: locals.scenarios, activeScenario: locals.activeScenario, assetVersion: locals.assetVersion }) %>
 
 <main class="container pedrra">
-  <section class="kpi-bar">
+
+  <% if (upcomingReceivables.length > 0) { %>
+    <div class="alert alert-warn upcoming-receivables">
+      <strong>⚠ <%= upcomingReceivables.length %> recebível(is) vencendo nos próximos 7 dias</strong>
+      · total <%= formatBrl(upcomingReceivablesTotal) %>
+      · <a href="/custos#receivables">ver detalhes</a>
+    </div>
+  <% } %>
+
+  <section class="kpi-bar kpi-bar-6">
     <div class="kpi-card">
       <span class="kpi-card-label">Caixa hoje</span>
       <span class="kpi-card-value strong"><%= formatBrl(cashToday) %></span>
@@ -25,8 +34,12 @@
       <span class="kpi-card-value <%= currentWeekResult >= 0 ? 'pos' : 'neg' %>"><%= formatBrl(currentWeekResult) %></span>
     </div>
     <div class="kpi-card">
-      <span class="kpi-card-label">Próx. 2 sem (projetado)</span>
+      <span class="kpi-card-label">Próx. 2 sem (proj.)</span>
       <span class="kpi-card-value <%= projection2Weeks >= 0 ? 'pos' : 'neg' %>"><%= formatBrl(projection2Weeks) %></span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-card-label">Ads sem. atual</span>
+      <span class="kpi-card-value ads-color"><%= formatBrl(adsCurrentWeek) %></span>
     </div>
   </section>
 
@@ -51,7 +64,7 @@
   </section>
 
   <section class="chart-wrap">
-    <canvas id="cashflow-chart" height="280"></canvas>
+    <canvas id="cashflow-chart" height="320"></canvas>
   </section>
 
   <section class="projection-table-wrap">
@@ -62,6 +75,7 @@
           <th>Semana</th>
           <th class="num">Vendas (real/proj)</th>
           <th class="num">Custos</th>
+          <th class="num">Ads</th>
           <th class="num">Saldo da sem.</th>
           <th class="num">Caixa após</th>
         </tr>
@@ -79,6 +93,7 @@
     cashToday: cashflow.cash_today,
     projectedWeeklyNet: cashflow.projected_weekly_net || 0,
     activeScenario: activeScenario,
+    visibleScenarioIds: visibleScenarioIds,
   }) %>;
 </script>
 <script src="/js/pedrra.js?v=<%= assetVersion %>"></script>
