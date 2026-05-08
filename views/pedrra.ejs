@@ -9,6 +9,9 @@
       <button type="button" class="btn btn-primary" data-modal="custo">+ Custo</button>
       <button type="button" class="btn btn-ghost" data-modal="recorrente">+ Custo recorrente</button>
       <button type="button" class="btn btn-warn" data-modal="ads">+ Investimento em Ads</button>
+      <% if (userCan('action.export_data')) { %>
+        <button type="button" class="btn btn-ghost" data-modal="export">Exportar</button>
+      <% } %>
     </div>
   </section>
 

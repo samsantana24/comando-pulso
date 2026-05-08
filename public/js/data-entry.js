@@ -385,4 +385,120 @@
 
     regenerate();
   }
+
+  // === Modal Export (XLSX/CSV) ===
+  (function setupExportModal() {
+    const dlg = document.getElementById('modal-export');
+    if (!dlg) return;
+    const form = document.getElementById('form-export');
+    const fromInput = form.elements.from;
+    const toInput = form.elements.to;
+    const presets = dlg.querySelectorAll('[data-preset]');
+
+    function setRange(fromYmd, toYmd) {
+      fromInput.value = fromYmd;
+      toInput.value = toYmd;
+    }
+    function todayYmd() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function applyPreset(name) {
+      const t = new Date();
+      const today = todayYmd();
+      if (name === 'this-week') {
+        const day = t.getDay();
+        const sun = new Date(t.getTime() - day * 86400000);
+        const sat = new Date(sun.getTime() + 6 * 86400000);
+        setRange(sun.toISOString().slice(0, 10), sat.toISOString().slice(0, 10));
+      } else if (name === 'this-month') {
+        const first = new Date(t.getFullYear(), t.getMonth(), 1);
+        setRange(first.toISOString().slice(0, 10), today);
+      } else if (name === 'last-30') {
+        const start = new Date(t.getTime() - 30 * 86400000);
+        setRange(start.toISOString().slice(0, 10), today);
+      } else if (name === 'quarter') {
+        const m = t.getMonth();
+        const startQ = new Date(t.getFullYear(), Math.floor(m / 3) * 3, 1);
+        setRange(startQ.toISOString().slice(0, 10), today);
+      } else if (name === 'year') {
+        setRange(t.getFullYear() + '-01-01', t.getFullYear() + '-12-31');
+      }
+    }
+    presets.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        presets.forEach((b) => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+        applyPreset(btn.dataset.preset);
+      });
+    });
+    applyPreset('year');
+
+    document.addEventListener('click', (e) => {
+      const trigger = e.target.closest('[data-modal="export"]');
+      if (!trigger) return;
+      const dft = trigger.dataset.exportDefault;
+      // reset to all checked first
+      form.elements.include_sales.checked = true;
+      form.elements.include_costs.checked = true;
+      form.elements.include_ads.checked = true;
+      form.elements.include_receivables.checked = true;
+      if (dft === 'receivables') {
+        form.elements.include_sales.checked = false;
+        form.elements.include_costs.checked = false;
+        form.elements.include_ads.checked = false;
+        form.elements.include_receivables.checked = true;
+      }
+      dlg.showModal();
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('btn-export-submit');
+      submitBtn.dataset.loading = '1';
+      submitBtn.disabled = true;
+      try {
+        const body = {
+          format: form.elements.format.value,
+          from: form.elements.from.value,
+          to: form.elements.to.value,
+          include: {
+            sales: form.elements.include_sales.checked,
+            costs: form.elements.include_costs.checked,
+            ads: form.elements.include_ads.checked,
+            receivables: form.elements.include_receivables.checked,
+          },
+        };
+        const res = await fetch('/api/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt || 'Falha no export');
+        }
+        const blob = await res.blob();
+        const cd = res.headers.get('Content-Disposition') || '';
+        const filenameMatch = cd.match(/filename="(.+?)"/);
+        const filename = filenameMatch ? filenameMatch[1] : 'export';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        window.toast('Exportação concluída ✓');
+        dlg.close();
+      } catch (err) {
+        window.toast('Falha no export: ' + err.message);
+      } finally {
+        delete submitBtn.dataset.loading;
+        submitBtn.disabled = false;
+      }
+    });
+  })();
 })();

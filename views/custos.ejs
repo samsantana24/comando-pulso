@@ -26,6 +26,11 @@
     <button type="button" class="btn btn-ghost btn-with-icon" data-modal="todos-futuros" title="Ver e editar todos os custos previstos no futuro">
       <%- include('partials/icons', { name: 'refresh' }) %><span>Todos os futuros</span>
     </button>
+    <% if (userCan('action.export_data')) { %>
+      <button type="button" class="btn btn-ghost btn-with-icon" data-modal="export" title="Exportar dados em XLSX ou CSV">
+        <%- include('partials/icons', { name: 'download' }) %><span>Exportar</span>
+      </button>
+    <% } %>
     <% const showToolbarActions = userCan('action.add_sale') || userCan('action.add_cost') || userCan('action.add_recurring_cost') || userCan('action.add_ads'); %>
     <% if (showToolbarActions) { %>
       <div class="toolbar-actions">
