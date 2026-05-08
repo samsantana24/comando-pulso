@@ -96,6 +96,8 @@
     projectedWeeklyNet: cashflow.projected_weekly_net || 0,
     activeScenario: activeScenario,
     visibleScenarioIds: visibleScenarioIds,
+    includeReceivablesInProjection: !!cashflow.include_receivables_in_projection,
+    includeAdsInRunway: cashflow.include_ads_in_runway !== false,
   }) %>;
 </script>
 <script src="/js/data-entry.js?v=<%= assetVersion %>"></script>

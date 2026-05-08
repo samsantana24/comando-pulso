@@ -14,14 +14,15 @@
   function cloneSeries(arr) { return arr.map((s) => ({ ...s })); }
 
   function recompute(seriesRef = projection, startCash = cashAtStart) {
+    const includeReceivables = !!initial.includeReceivablesInProjection;
     let cum = startCash;
     for (const w of seriesRef) {
-      const ads = Number(w.ads_paid || 0) + Number(w.ads_planned || 0);
       let delta;
       if (w.is_past || w.is_current) {
         delta = Number(w.sales_real || 0) - Number(w.costs_paid || 0) - Number(w.ads_paid || 0);
       } else {
-        delta = Number(w.sales_projected || 0) - Number(w.costs_planned || 0) - Number(w.ads_planned || 0);
+        const recvContrib = includeReceivables ? Number(w.receivables_projected || 0) : 0;
+        delta = Number(w.sales_projected || 0) + recvContrib - Number(w.costs_planned || 0) - Number(w.ads_planned || 0);
       }
       w.week_delta = delta;
       cum += delta;
