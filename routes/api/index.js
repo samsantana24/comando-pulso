@@ -16,6 +16,7 @@ router.use('/export', require('./export'));
 router.use('/categories', require('./categories'));
 router.use('/ads-week', require('./ads-week'));
 router.use('/receivables', require('./receivables'));
+router.use('/permissions', require('./permissions'));
 
 router.use((req, res) => res.status(404).json({ error: 'endpoint não encontrado' }));
 

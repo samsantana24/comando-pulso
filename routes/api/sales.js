@@ -2,6 +2,7 @@ const router = require('express').Router();
 const sales = require('../../db/queries/sales');
 const { audit } = require('../../lib/audit');
 const { isDateInRange, isNonNegative, MIN_DATE, MAX_DATE } = require('../../lib/validators');
+const { requirePerm } = require('../../lib/permissions');
 
 const DATE_ERR = `date deve ser entre ${MIN_DATE} e ${MAX_DATE} (YYYY-MM-DD)`;
 
@@ -14,7 +15,7 @@ router.get('/', (req, res) => {
   }));
 });
 
-router.post('/', (req, res) => {
+router.post('/', requirePerm('action.add_sale'), (req, res) => {
   const b = req.body;
   if (!isDateInRange(b.date)) return res.status(400).json({ error: DATE_ERR });
   if (!isNonNegative(b.gross_amount)) return res.status(400).json({ error: 'gross_amount deve ser >= 0' });
@@ -36,7 +37,7 @@ router.post('/', (req, res) => {
   res.status(201).json(created);
 });
 
-router.patch('/:id', (req, res) => {
+router.patch('/:id', requirePerm('action.edit_sale'), (req, res) => {
   const id = Number(req.params.id);
   const before = sales.getById(id);
   if (!before) return res.status(404).json({ error: 'venda não encontrada' });
@@ -61,7 +62,7 @@ router.patch('/:id', (req, res) => {
   res.json(updated);
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requirePerm('action.delete_sale'), (req, res) => {
   const id = Number(req.params.id);
   const before = sales.remove(id);
   if (!before) return res.status(404).json({ error: 'venda não encontrada' });

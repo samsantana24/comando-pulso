@@ -1,10 +1,10 @@
 const router = require('express').Router();
-const { requireAuth, requireMaster, requireTotp } = require('../lib/auth');
+const { requireAuth, requireMaster, requireTotp, requireNav } = require('../lib/auth');
 const team = require('../db/queries/team');
 const funnel = require('../db/queries/funnel');
 const scenarios = require('../db/queries/scenarios');
 
-router.get('/', requireAuth, requireMaster, requireTotp, (req, res) => {
+router.get('/', requireAuth, requireNav('nav.funil'), requireTotp, (req, res) => {
   const active = scenarios.getActive();
   if (!active) {
     return res.render('error', { code: 400, message: 'Nenhum cenário ativo. Crie ou ative um cenário pelo header.' });

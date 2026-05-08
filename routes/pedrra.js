@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { requireAuth, requireMaster, requireTotp } = require('../lib/auth');
+const { requireAuth, requireMaster, requireTotp, requireNav } = require('../lib/auth');
 const cashflow = require('../lib/cashflow');
 const scenarios = require('../db/queries/scenarios');
 const receivables = require('../db/queries/receivables');
@@ -8,7 +8,7 @@ const team = require('../db/queries/team');
 const categories = require('../db/queries/categories');
 const { todayYmd, ymd } = require('../lib/weeks');
 
-router.get('/', requireAuth, requireMaster, requireTotp, (req, res) => {
+router.get('/', requireAuth, requireNav('nav.pedrra'), requireTotp, (req, res) => {
   const active = scenarios.getActive();
   const data = cashflow.getWeeklyCashflow({
     pastWeeks: 1,

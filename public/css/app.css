@@ -1577,3 +1577,66 @@ button, a, [role="button"], .scenario-item, [data-modal] {
 .action-delete { background: rgba(239, 68, 68, 0.15); color: #FCA5A5; }
 .action-activate { background: rgba(45, 212, 191, 0.15); color: var(--accent); }
 .action-duplicate { background: rgba(45, 212, 191, 0.10); color: var(--accent); }
+
+/* ============ Modo Privado (ocultar valores) ============ */
+.privacy-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  margin-right: 8px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease-pulso);
+}
+.privacy-toggle:hover { color: var(--fg); border-color: var(--line-strong); }
+.privacy-toggle .privacy-icon-off { display: none; }
+.privacy-toggle.is-active { color: var(--accent); border-color: var(--accent); }
+.privacy-toggle.is-active .privacy-icon-on { display: none; }
+.privacy-toggle.is-active .privacy-icon-off { display: inline-block; }
+
+body.values-hidden .money,
+body.values-hidden .kpi-card-value,
+body.values-hidden .kpi-card-foot,
+body.values-hidden .amount,
+body.values-hidden [data-money] {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  background: none !important;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.55);
+  user-select: none;
+  letter-spacing: 0.05em;
+}
+body.values-hidden .money::after,
+body.values-hidden .kpi-card-value::after { content: ''; }
+
+/* ============ Permissões ============ */
+.perm-group { margin-bottom: 18px; }
+.perm-group h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+.perm-group .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.code-tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  background: rgba(255,255,255,0.04);
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: auto;
+}

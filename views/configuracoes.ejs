@@ -88,6 +88,29 @@
   </section>
 
   <section class="settings-card">
+    <h2>Permissões — Rachel <span class="muted">(role: financeiro)</span></h2>
+    <p class="muted">Marque o que a Rachel pode acessar e fazer. Master sempre tem acesso total. Mudanças aplicam após próximo login dela.</p>
+    <form id="form-permissions" class="settings-form">
+      <% for (const grp of permGroupOrder) { %>
+        <% if (permsByGroup[grp] && permsByGroup[grp].length > 0) { %>
+          <div class="perm-group">
+            <h3><%= grp %></h3>
+            <% for (const p of permsByGroup[grp]) { %>
+              <label class="checkbox-label">
+                <input type="checkbox" data-perm-key="<%= p.key %>" <%= p.allowed ? 'checked' : '' %> />
+                <%= p.label %>
+                <span class="muted code-tag"><%= p.key %></span>
+              </label>
+            <% } %>
+          </div>
+        <% } %>
+      <% } %>
+      <button type="submit" class="btn btn-primary">Salvar permissões</button>
+      <span class="settings-status" id="perm-status"></span>
+    </form>
+  </section>
+
+  <section class="settings-card">
     <h2>Backup e exportação</h2>
     <p class="muted">Exporta o estado atual do banco em JSON (todas as tabelas exceto users/sessões).</p>
     <a class="btn btn-primary" href="/api/export" download>Exportar JSON completo</a>

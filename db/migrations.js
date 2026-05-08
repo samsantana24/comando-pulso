@@ -157,6 +157,34 @@ function runMigrations(db) {
     CREATE INDEX IF NOT EXISTS idx_categories_active ON categories(active);
     CREATE INDEX IF NOT EXISTS idx_receivables_expected_date ON receivables(expected_date);
     CREATE INDEX IF NOT EXISTS idx_receivables_status ON receivables(status);
+
+    CREATE TABLE IF NOT EXISTS permissions (
+      role TEXT NOT NULL,
+      perm_key TEXT NOT NULL,
+      allowed INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_by TEXT,
+      PRIMARY KEY (role, perm_key)
+    );
+
+    INSERT OR IGNORE INTO permissions (role, perm_key, allowed) VALUES
+      ('financeiro', 'nav.pedrra', 0),
+      ('financeiro', 'nav.custos', 1),
+      ('financeiro', 'nav.funil', 0),
+      ('financeiro', 'nav.configuracoes', 0),
+      ('financeiro', 'action.add_sale', 1),
+      ('financeiro', 'action.edit_sale', 1),
+      ('financeiro', 'action.delete_sale', 0),
+      ('financeiro', 'action.add_cost', 1),
+      ('financeiro', 'action.edit_cost', 1),
+      ('financeiro', 'action.delete_cost', 0),
+      ('financeiro', 'action.add_recurring_cost', 1),
+      ('financeiro', 'action.add_ads', 0),
+      ('financeiro', 'action.edit_ads', 0),
+      ('financeiro', 'action.delete_ads', 0),
+      ('financeiro', 'view.kpi_caixa', 0),
+      ('financeiro', 'view.runway', 0),
+      ('financeiro', 'view.audit_log', 0);
   `);
 
   addColumnIfMissing(db, 'costs', 'is_ads', 'INTEGER DEFAULT 0');

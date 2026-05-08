@@ -4,6 +4,7 @@ const { weekRangeFromDate, ymd, weekIdFromSunday, weekLabel } = require('../../l
 const { audit } = require('../../lib/audit');
 const { requireMaster } = require('../../lib/auth');
 const { isDateInRange, isNonNegative, MIN_DATE, MAX_DATE } = require('../../lib/validators');
+const { requirePerm } = require('../../lib/permissions');
 
 const ADS_CATEGORY = 'Tráfego Pago (Google / Meta Ads)';
 const DATE_ERR = `date deve ser entre ${MIN_DATE} e ${MAX_DATE} (YYYY-MM-DD)`;
@@ -42,7 +43,7 @@ router.get('/', (req, res) => {
   res.json(Array.from(byWeek.values()).sort((a, b) => a.sun.localeCompare(b.sun)));
 });
 
-router.post('/', requireMaster, (req, res) => {
+router.post('/', requirePerm('action.add_ads'), (req, res) => {
   const b = req.body || {};
   if (!isNonNegative(b.total_amount)) {
     return res.status(400).json({ error: 'total_amount deve ser >= 0' });
@@ -88,7 +89,7 @@ router.post('/', requireMaster, (req, res) => {
   });
 });
 
-router.delete('/', requireMaster, (req, res) => {
+router.delete('/', requirePerm('action.delete_ads'), (req, res) => {
   const { week_start_date, scenario_id } = req.query;
   if (!isDateInRange(week_start_date)) return res.status(400).json({ error: 'week_start_date: ' + DATE_ERR });
   const sunDate = weekRangeFromDate(week_start_date).sun;

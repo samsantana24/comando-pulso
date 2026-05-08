@@ -5,6 +5,7 @@ const { expandRule } = require('../../lib/recurrence');
 const { audit } = require('../../lib/audit');
 const { isDateInRange, isPositive, MIN_DATE, MAX_DATE } = require('../../lib/validators');
 const { logWarn } = require('../../lib/log');
+const { requirePerm } = require('../../lib/permissions');
 
 const ADS_CATEGORY = 'Tráfego Pago (Google / Meta Ads)';
 const ADS_BLOCK_ERROR = "A categoria 'Tráfego Pago (Google / Meta Ads)' só pode ser lançada via 'Investimento em Ads'. Use o botão dedicado.";
@@ -35,7 +36,7 @@ router.get('/', (req, res) => {
   }));
 });
 
-router.post('/', (req, res) => {
+router.post('/', requirePerm('action.add_cost'), (req, res) => {
   const b = req.body;
   const isRecurring = b.is_recurring === true || b.is_recurring === 'true';
   if (!b.category) return res.status(400).json({ error: 'category é obrigatório' });
@@ -105,7 +106,7 @@ router.post('/', (req, res) => {
   res.status(201).json(created);
 });
 
-router.patch('/:id', (req, res) => {
+router.patch('/:id', requirePerm('action.edit_cost'), (req, res) => {
   const id = Number(req.params.id);
   const before = costs.getById(id);
   if (!before) return res.status(404).json({ error: 'custo não encontrado' });
@@ -132,7 +133,7 @@ router.patch('/:id', (req, res) => {
   res.json(updated);
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requirePerm('action.delete_cost'), (req, res) => {
   const id = Number(req.params.id);
   const before = costs.remove(id);
   if (!before) return res.status(404).json({ error: 'custo não encontrado' });

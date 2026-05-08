@@ -164,4 +164,31 @@
       }
     }
   });
+
+  const permForm = document.getElementById('form-permissions');
+  if (permForm) {
+    permForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const permStatus = document.getElementById('perm-status');
+      const updates = [...permForm.querySelectorAll('input[type="checkbox"][data-perm-key]')]
+        .map((cb) => ({ key: cb.dataset.permKey, allowed: cb.checked }));
+      permStatus.textContent = 'salvando…';
+      try {
+        const res = await fetch('/api/permissions', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: 'financeiro', updates }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          permStatus.textContent = 'erro: ' + (err.error || res.status);
+          return;
+        }
+        permStatus.textContent = '✔ salvo';
+        setTimeout(() => { permStatus.textContent = ''; }, 2500);
+      } catch (err) {
+        permStatus.textContent = 'erro: ' + err.message;
+      }
+    });
+  }
 })();

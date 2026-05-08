@@ -366,9 +366,38 @@
     }
   }
 
+  const PEDRRA_PREFS_KEY = 'pedrra:windowPrefs';
+
+  function loadPrefs() {
+    try {
+      const raw = localStorage.getItem(PEDRRA_PREFS_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (obj && typeof obj.past === 'string' && typeof obj.future === 'string') return obj;
+      return null;
+    } catch (_) { return null; }
+  }
+
+  function savePrefs(past, future) {
+    try {
+      localStorage.setItem(PEDRRA_PREFS_KEY, JSON.stringify({ past: String(past), future: String(future) }));
+    } catch (_) { /* ignora quota/privacy */ }
+  }
+
+  function applyPrefsToSelects() {
+    const prefs = loadPrefs();
+    if (!prefs) return null;
+    const pastSel = document.getElementById('past-weeks');
+    const futureSel = document.getElementById('future-weeks');
+    if (pastSel && [...pastSel.options].some(o => o.value === prefs.past)) pastSel.value = prefs.past;
+    if (futureSel && [...futureSel.options].some(o => o.value === prefs.future)) futureSel.value = prefs.future;
+    return prefs;
+  }
+
   async function loadWindow() {
     const past = document.getElementById('past-weeks').value;
     const future = document.getElementById('future-weeks').value;
+    savePrefs(past, future);
     const status = document.getElementById('chart-status');
     status.textContent = 'carregando…';
     try {
@@ -390,5 +419,11 @@
   document.getElementById('future-weeks').addEventListener('change', loadWindow);
 
   recompute();
-  loadVisibleScenarioSeries(1, 2).then(render);
+
+  const restored = applyPrefsToSelects();
+  if (restored) {
+    loadWindow();
+  } else {
+    loadVisibleScenarioSeries(1, 2).then(render);
+  }
 })();

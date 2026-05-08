@@ -16,10 +16,18 @@
       Cenário: <strong><%= activeScenario ? activeScenario.name : '—' %></strong>
     </div>
     <div class="toolbar-actions">
-      <button type="button" class="btn btn-primary" data-modal="venda">+ Venda</button>
-      <button type="button" class="btn btn-primary" data-modal="custo">+ Custo</button>
-      <button type="button" class="btn btn-ghost" data-modal="recorrente">+ Custo recorrente</button>
-      <button type="button" class="btn btn-warn" data-modal="ads">+ Investimento em Ads</button>
+      <% if (userCan('action.add_sale')) { %>
+        <button type="button" class="btn btn-primary" data-modal="venda">+ Venda</button>
+      <% } %>
+      <% if (userCan('action.add_cost')) { %>
+        <button type="button" class="btn btn-primary" data-modal="custo">+ Custo</button>
+      <% } %>
+      <% if (userCan('action.add_recurring_cost')) { %>
+        <button type="button" class="btn btn-ghost" data-modal="recorrente">+ Custo recorrente</button>
+      <% } %>
+      <% if (userCan('action.add_ads')) { %>
+        <button type="button" class="btn btn-warn" data-modal="ads">+ Investimento em Ads</button>
+      <% } %>
     </div>
   </section>
 
@@ -120,8 +128,12 @@
               <% if (s.payment_method) { %> · <%= formatPaymentMethod(s.payment_method) %><% } %>
             </div>
             <div class="entry-actions">
-              <button type="button" data-action="edit-sale" data-payload='<%- JSON.stringify(s) %>' class="btn-link">editar</button>
-              <button type="button" data-action="delete" data-url="/api/sales/<%= s.id %>" class="btn-link danger">excluir</button>
+              <% if (userCan('action.edit_sale')) { %>
+                <button type="button" data-action="edit-sale" data-payload='<%- JSON.stringify(s) %>' class="btn-link">editar</button>
+              <% } %>
+              <% if (userCan('action.delete_sale')) { %>
+                <button type="button" data-action="delete" data-url="/api/sales/<%= s.id %>" class="btn-link danger">excluir</button>
+              <% } %>
             </div>
           </li>
         <% } %>
@@ -145,8 +157,12 @@
               <%= c.category %><% if (c.description) { %> · <%= c.description %><% } %>
             </div>
             <div class="entry-actions">
-              <button type="button" data-action="edit-cost" data-payload='<%- JSON.stringify(c) %>' class="btn-link">editar</button>
-              <button type="button" data-action="delete" data-url="/api/costs/<%= c.id %>" class="btn-link danger">excluir</button>
+              <% if (userCan('action.edit_cost')) { %>
+                <button type="button" data-action="edit-cost" data-payload='<%- JSON.stringify(c) %>' class="btn-link">editar</button>
+              <% } %>
+              <% if (userCan('action.delete_cost')) { %>
+                <button type="button" data-action="delete" data-url="/api/costs/<%= c.id %>" class="btn-link danger">excluir</button>
+              <% } %>
             </div>
           </li>
         <% } %>
