@@ -1839,3 +1839,174 @@ body.values-hidden .kpi-card-value::after { content: ''; }
 }
 .ads-history-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .ads-history-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+/* ============================================================ */
+/* ONDA 4 — UPGRADE VISUAL S-TIER */
+/* ============================================================ */
+
+:root {
+  /* Elevação: 6 níveis */
+  --elev-0: #000000;
+  --elev-1: #08080A;
+  --elev-2: #0E0E11;
+  --elev-3: #15151A;
+  --elev-4: #1C1C22;
+  --elev-5: #25252D;
+
+  /* Bordas em gradiente */
+  --border-grad: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 50%, rgba(255,46,90,0.08) 100%);
+  --border-grad-accent: linear-gradient(135deg, rgba(255,46,90,0.4) 0%, rgba(255,46,90,0.1) 50%, rgba(255,255,255,0.08) 100%);
+
+  /* Glows por contexto */
+  --glow-card-hover: 0 20px 60px -10px rgba(255, 46, 90, 0.15);
+  --glow-button-pressed: 0 0 0 4px rgba(255, 46, 90, 0.18);
+  --glow-input-focus: 0 0 0 3px rgba(255, 46, 90, 0.2), 0 0 24px rgba(255, 46, 90, 0.1);
+
+  /* Espaçamento responsivo */
+  --gutter: clamp(16px, 2.4vw, 32px);
+
+  /* Escala tipográfica modular (1.250) */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 17px;
+  --text-lg: 21px;
+  --text-xl: 27px;
+  --text-2xl: 33px;
+  --text-3xl: 42px;
+  --text-4xl: 52px;
+  --text-5xl: 65px;
+
+  --leading-tight: 1.1;
+  --leading-normal: 1.55;
+  --leading-loose: 1.8;
+}
+
+/* === KPI primário com borda gradiente animada === */
+.kpi-card.kpi-primary {
+  background: var(--elev-2);
+  position: relative;
+  isolation: isolate;
+}
+.kpi-card.kpi-primary::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--border-grad-accent);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.45;
+  transition: opacity var(--duration) var(--ease-pulso);
+}
+.kpi-card.kpi-primary:hover::before { opacity: 1; }
+.kpi-card.kpi-primary { box-shadow: var(--shadow-accent-glow); }
+.kpi-card.kpi-primary:hover { box-shadow: var(--glow-card-hover); }
+
+/* KPI cards: hover eleva valor */
+.kpi-card { transition: transform var(--duration) var(--ease-pulso), border-color var(--duration) var(--ease-pulso), box-shadow var(--duration) var(--ease-pulso); }
+.kpi-card:hover .kpi-card-value { transform: translateY(-2px); }
+.kpi-card-value { transition: transform var(--duration) var(--ease-pulso); display: block; }
+
+/* Tipografia escalada nos KPIs (sem quebrar o ellipsis da Onda 3) */
+.kpi-card.kpi-primary .kpi-card-value { font-size: clamp(28px, 3vw, 44px); }
+
+/* === Botões com brilho percorrendo no hover === */
+.btn-primary { position: relative; overflow: hidden; }
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transition: left 0.6s var(--ease-pulso);
+  pointer-events: none;
+}
+.btn-primary:hover::after { left: 100%; }
+.btn-primary:active { box-shadow: var(--glow-button-pressed); }
+
+/* === Tabelas com profundidade === */
+.weekly-grid tbody tr.row-subtotal td:first-child {
+  position: relative;
+}
+.weekly-grid tbody tr.row-subtotal td:first-child::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 4px; bottom: 4px;
+  width: 3px;
+  background: var(--accent);
+  border-radius: 0 2px 2px 0;
+  opacity: 0.6;
+}
+.weekly-grid tbody tr.row-saldo td:first-child::before {
+  background: var(--gold);
+}
+.weekly-grid td.num + td.num,
+.weekly-grid td.amount + td.amount {
+  border-left: 1px solid rgba(255,255,255,0.04);
+}
+
+/* === Skeleton loader === */
+.kpi-skeleton {
+  background: linear-gradient(90deg, var(--elev-1) 25%, var(--elev-2) 50%, var(--elev-1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: var(--radius-lg);
+  height: 120px;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* === Configurações: seções diferenciadas === */
+.settings-card { background: var(--elev-2); }
+.settings-card.settings-primary {
+  position: relative;
+  isolation: isolate;
+}
+.settings-card.settings-primary::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--border-grad-accent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.5;
+}
+
+/* Audit log com cores por tipo */
+.audit-table .badge.action-create { background: rgba(34, 197, 94, 0.15); color: #4ADE80; }
+.audit-table .badge.action-update { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
+.audit-table .badge.action-delete { background: rgba(239, 68, 68, 0.15); color: #FCA5A5; }
+
+/* === Brand mark animação === */
+.brand-mark svg { transition: filter var(--duration) var(--ease-pulso); }
+.brand:hover .brand-mark svg {
+  filter: drop-shadow(0 0 16px var(--accent-glow));
+}
+.brand:hover .brand-mark path {
+  animation: brandStroke 1.2s var(--ease-pulso);
+}
+@keyframes brandStroke {
+  0% { stroke-dasharray: 50; stroke-dashoffset: 50; }
+  100% { stroke-dasharray: 50; stroke-dashoffset: 0; }
+}
+.brand:hover .brand-name { letter-spacing: 0.10em; transition: letter-spacing var(--duration) var(--ease-pulso); }
+
+/* === Skeletons na PEDRRA antes do JS bootar === */
+.kpi-bar.is-loading .kpi-card { opacity: 0.4; }
+
+.btn-with-icon { display: inline-flex; align-items: center; gap: 6px; }
+.btn-with-icon svg { flex-shrink: 0; }

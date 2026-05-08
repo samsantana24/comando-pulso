@@ -25,16 +25,16 @@
     <% if (showToolbarActions) { %>
       <div class="toolbar-actions">
         <% if (userCan('action.add_sale')) { %>
-          <button type="button" class="btn btn-primary" data-modal="venda">+ Venda</button>
+          <button type="button" class="btn btn-primary btn-with-icon" data-modal="venda"><%- include('partials/icons', { name: 'tag' }) %><span>Venda</span></button>
         <% } %>
         <% if (userCan('action.add_cost')) { %>
-          <button type="button" class="btn btn-primary" data-modal="custo">+ Custo</button>
+          <button type="button" class="btn btn-primary btn-with-icon" data-modal="custo"><%- include('partials/icons', { name: 'minus' }) %><span>Custo</span></button>
         <% } %>
         <% if (userCan('action.add_recurring_cost')) { %>
-          <button type="button" class="btn btn-ghost" data-modal="recorrente">+ Custo recorrente</button>
+          <button type="button" class="btn btn-ghost btn-with-icon" data-modal="recorrente"><%- include('partials/icons', { name: 'refresh' }) %><span>Custo recorrente</span></button>
         <% } %>
         <% if (userCan('action.add_ads')) { %>
-          <button type="button" class="btn btn-warn" data-modal="ads">+ Investimento em Ads</button>
+          <button type="button" class="btn btn-warn btn-with-icon" data-modal="ads"><%- include('partials/icons', { name: 'zap' }) %><span>Ads</span></button>
         <% } %>
       </div>
     <% } %>
