@@ -2425,3 +2425,162 @@ li.is-parcel { background: rgba(255, 215, 0, 0.025); border-left: 2px solid rgba
 }
 .export-checks label:hover { border-color: rgba(255,255,255,0.2); }
 .export-checks input { accent-color: var(--accent); }
+
+/* === Funil evolutivo (ONDA 6 Fase H) === */
+.funnel-mode-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+}
+.funnel-mode-info .t-eyebrow {
+  font-size: 9px; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--accent);
+}
+.funnel-mode-info h3 { font-size: 18px; font-weight: 800; margin: 4px 0 6px; color: var(--fg); }
+.funnel-mode-actions { display: inline-flex; gap: 10px; align-items: center; }
+
+.funnel-timeline {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.timeline-actions { display: inline-flex; align-items: center; gap: 12px; }
+.timeline-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.timeline-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.timeline-table thead th {
+  position: sticky; top: 0;
+  background: var(--bg-elevated);
+  padding: 10px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  z-index: 2;
+}
+.timeline-table thead th.param-col {
+  position: sticky; left: 0;
+  z-index: 3;
+  text-align: left;
+  min-width: 200px;
+  background: var(--bg-elevated);
+}
+.timeline-table tbody td.param-name {
+  position: sticky; left: 0;
+  background: var(--bg-card);
+  font-weight: 600; color: var(--fg);
+  padding: 10px 12px;
+  border-right: 1px solid var(--line);
+  min-width: 200px;
+  z-index: 1;
+}
+.timeline-table .week-cell { padding: 4px 6px; border-bottom: 1px solid var(--line-soft); border-right: 1px solid var(--line-soft); }
+.timeline-table .week-cell input {
+  width: 80px; padding: 6px 8px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  text-align: right;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+.timeline-table .week-cell input:hover { border-color: rgba(255,255,255,0.18); background: rgba(255, 255, 255, 0.02); }
+.timeline-table .week-cell input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(255, 46, 90, 0.05);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.timeline-table tr.result-row td.param-name { color: var(--accent); font-weight: 800; }
+.timeline-table tr.result-row .week-cell-result {
+  padding: 12px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(255, 46, 90, 0.04);
+  border-bottom: 1px solid var(--line-soft);
+  border-right: 1px solid var(--line-soft);
+}
+
+.timeline-team { margin-top: 32px; }
+.timeline-team h3 { font-size: 14px; font-weight: 800; margin-bottom: 8px; }
+
+.team-timeline-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+}
+.team-timeline-table thead th {
+  position: sticky; top: 0;
+  padding: 8px 10px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--line);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  z-index: 2;
+}
+.team-timeline-table tbody td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.team-timeline-table .person-name { font-weight: 600; }
+.team-timeline-table .week-cell {
+  display: flex; align-items: center; gap: 4px;
+  white-space: nowrap;
+}
+.team-timeline-table input.week-cap {
+  width: 56px; padding: 4px 6px;
+  font-size: 11px; text-align: right;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+.team-timeline-table input.week-cap:hover { border-color: rgba(255,255,255,0.18); }
+.team-timeline-table input.week-cap:focus {
+  outline: none; border-color: var(--accent);
+  background: rgba(255, 46, 90, 0.05);
+}
+.team-timeline-table .inactive { opacity: 0.32; background: rgba(255, 255, 255, 0.01); }
+.team-timeline-table .toggle-active {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--muted);
+  user-select: none;
+  padding: 0 2px;
+}
+.team-timeline-table .toggle-active.is-active { color: var(--pos); }

@@ -29,6 +29,11 @@ router.get('/', requireAuth, requireNav('nav.funil'), requireTotp, (req, res) =>
     };
   }
 
+  const evolutiveEnabled = !!active.evolutive_funnel_enabled;
+  const evolutiveWeeks = Number(active.evolutive_funnel_weeks) || 12;
+  const funnelWeekly = evolutiveEnabled ? funnel.getWeeklyForScenario(active.id) : [];
+  const teamWeekly = evolutiveEnabled ? funnel.getTeamWeeklyForScenario(active.id) : [];
+
   res.render('funil', {
     title: 'Funil',
     user: req.user,
@@ -37,6 +42,11 @@ router.get('/', requireAuth, requireNav('nav.funil'), requireTotp, (req, res) =>
     funnel: funnelData,
     sdrs: sdrs.map(joinPerf),
     closers: closers.map(joinPerf),
+    evolutiveEnabled,
+    evolutiveWeeks,
+    funnelWeekly,
+    teamWeekly,
+    allTeam: [...sdrs, ...closers],
   });
 });
 

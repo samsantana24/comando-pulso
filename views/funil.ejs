@@ -7,6 +7,173 @@
     <span class="muted">Este é um cenário de planejamento de guerra. Trace a nossa estratégia, General, e nos leve à vitória!</span>
   </div>
 
+  <section class="funnel-mode-bar">
+    <div class="funnel-mode-info">
+      <span class="t-eyebrow">MODO</span>
+      <h3 id="mode-title"><%= evolutiveEnabled ? 'Evolutivo (timeline)' : 'Estático' %></h3>
+      <p class="muted small">
+        <% if (evolutiveEnabled) { %>
+          Funil tem <%= evolutiveWeeks %> semanas configuradas. PEDRRA usa essa projeção semana a semana.
+        <% } else { %>
+          Funil tem 1 configuração que vale pra todas as semanas. PEDRRA multiplica por semana.
+        <% } %>
+      </p>
+    </div>
+    <div class="funnel-mode-actions">
+      <% if (!evolutiveEnabled) { %>
+        <select id="weeks-count">
+          <option value="4">4 semanas</option>
+          <option value="8">8 semanas</option>
+          <option value="12" selected>12 semanas</option>
+          <option value="24">24 semanas</option>
+        </select>
+        <button type="button" class="btn btn-primary" id="btn-enable-evolutive" data-scenario-id="<%= activeScenario.id %>">Ativar modo evolutivo</button>
+      <% } else { %>
+        <button type="button" class="btn btn-ghost btn-small" id="btn-apply-curve">Aplicar curva sugerida</button>
+        <button type="button" class="btn btn-ghost btn-small" id="btn-disable-evolutive" data-scenario-id="<%= activeScenario.id %>">Voltar ao modo estático</button>
+      <% } %>
+    </div>
+  </section>
+
+  <% if (evolutiveEnabled) { %>
+    <section class="funnel-timeline" id="funnel-timeline" data-scenario-id="<%= activeScenario.id %>" data-weeks-count="<%= evolutiveWeeks %>">
+      <div class="timeline-header">
+        <h2>Timeline · <%= evolutiveWeeks %> semanas</h2>
+        <div class="timeline-actions">
+          <span id="evo-save-status" class="save-status" data-state="idle">salvo</span>
+          <button type="button" class="btn btn-primary btn-small" id="btn-save-timeline">Salvar timeline</button>
+        </div>
+      </div>
+
+      <div class="timeline-scroll">
+        <table class="timeline-table">
+          <thead>
+            <tr>
+              <th class="param-col">Parâmetro</th>
+              <% for (let i = 1; i <= evolutiveWeeks; i++) { %>
+                <th class="week-col">Sem <%= i %></th>
+              <% } %>
+            </tr>
+          </thead>
+          <tbody>
+            <% const PARAMS = [
+              { key: 'ads_per_week', label: 'Ads/sem (R$)', step: 100, min: 0 },
+              { key: 'cpl', label: 'CPL (R$)', step: 1, min: 0 },
+              { key: 'rebarba_sb_per_week', label: 'Rebarba SB/sem', step: 1, min: 0 },
+              { key: 'show_rate_pct', label: 'Show rate (%)', step: 0.5, min: 0, max: 100 },
+              { key: 'call_to_sale_pct', label: 'Conv. call (%)', step: 0.5, min: 0, max: 100 },
+              { key: 'forecast_bonus_pct', label: 'Forecast bônus (%)', step: 1, min: 0, max: 100 },
+              { key: 'ticket_avg', label: 'Ticket médio (R$)', step: 100, min: 0 },
+              { key: 'payment_tax_pct', label: 'Taxa pgto. (%)', step: 0.5, min: 0, max: 100 },
+            ]; %>
+            <% for (const param of PARAMS) { %>
+              <tr data-param="<%= param.key %>">
+                <td class="param-name"><%= param.label %></td>
+                <% for (let i = 1; i <= evolutiveWeeks; i++) { %>
+                  <% const wk = funnelWeekly.find((x) => x.week_index === i); %>
+                  <% const val = wk ? Number(wk[param.key] || 0) : 0; %>
+                  <td class="week-cell">
+                    <input type="number"
+                      <% if (param.min != null) { %>min="<%= param.min %>"<% } %>
+                      <% if (param.max != null) { %>max="<%= param.max %>"<% } %>
+                      step="<%= param.step %>"
+                      data-week="<%= i %>" data-param="<%= param.key %>"
+                      value="<%= val %>" />
+                  </td>
+                <% } %>
+              </tr>
+            <% } %>
+            <tr class="result-row" data-result="receita_liquida">
+              <td class="param-name">Receita projetada líquida</td>
+              <% for (let i = 1; i <= evolutiveWeeks; i++) { %>
+                <td class="week-cell-result" data-week="<%= i %>">—</td>
+              <% } %>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="timeline-team">
+        <h3>Time semana a semana</h3>
+        <p class="muted small">Capacidade de cada SDR/Closer por semana. Marque inativo quando a pessoa ainda não está (ou já saiu) no time naquela semana.</p>
+
+        <div class="timeline-scroll">
+          <table class="team-timeline-table">
+            <thead>
+              <tr>
+                <th>Pessoa</th>
+                <th>Função</th>
+                <% for (let i = 1; i <= evolutiveWeeks; i++) { %>
+                  <th class="week-col">S<%= i %></th>
+                <% } %>
+              </tr>
+            </thead>
+            <tbody id="team-timeline-tbody">
+              <% for (const m of allTeam) { %>
+                <tr data-member-id="<%= m.id %>" data-role="<%= m.role %>">
+                  <td class="person-name"><%= m.name %></td>
+                  <td class="muted"><%= m.role === 'sdr' ? 'SDR' : 'Closer' %></td>
+                  <% for (let i = 1; i <= evolutiveWeeks; i++) { %>
+                    <% const tw = teamWeekly.find((t) => t.team_member_id === m.id && t.week_index === i); %>
+                    <% const isActive = tw ? tw.active === 1 : true; %>
+                    <% const cap = tw ? Number(tw.capacity_per_week || 0) : (m.role === 'sdr' ? Number(m.capacity_per_week || 0) : 0); %>
+                    <% const conv = tw ? Number(tw.conversion_pct || 0) : Number(m.conversion_pct || (m.role === 'sdr' ? 70 : 25)); %>
+                    <td class="week-cell <%= isActive ? '' : 'inactive' %>" data-week="<%= i %>">
+                      <span class="toggle-active <%= isActive ? 'is-active' : '' %>" data-toggle-active title="Ativar/desativar">●</span>
+                      <% if (m.role === 'sdr') { %>
+                        <input type="number" class="week-cap" min="0" step="1" value="<%= cap %>" data-team-week="capacity" placeholder="cap" title="Capacidade /sem" />
+                      <% } %>
+                      <input type="number" class="week-cap" min="0" max="100" step="0.5" value="<%= conv %>" data-team-week="conversion" placeholder="%" title="<%= m.role === 'sdr' ? 'Show rate %' : 'Conv. %' %>" />
+                      <input type="hidden" data-team-week="active" value="<%= isActive ? 1 : 0 %>" />
+                    </td>
+                  <% } %>
+                </tr>
+              <% } %>
+              <% if (allTeam.length === 0) { %>
+                <tr><td colspan="<%= evolutiveWeeks + 2 %>" class="muted center">Nenhum membro no time. Volte ao modo estático e adicione SDR/Closer primeiro.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <dialog id="modal-apply-curve" class="modal">
+      <form id="form-apply-curve">
+        <h2>Aplicar curva de crescimento</h2>
+        <p class="muted">A partir da semana 1 (configurada), aplica taxa de crescimento até atingir o platô.</p>
+
+        <div class="form-row">
+          <label class="form-label">Crescimento ads/semana
+            <input type="number" name="ads_pct" value="10" step="1" /> %
+          </label>
+          <label class="form-label">Variação CPL/semana
+            <input type="number" name="cpl_pct" value="-2" step="0.5" /> %
+          </label>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Show rate +/semana
+            <input type="number" name="show_rate_pp" value="0.5" step="0.5" /> p.p.
+          </label>
+          <label class="form-label">Conv. call +/semana
+            <input type="number" name="conv_pp" value="0.5" step="0.5" /> p.p.
+          </label>
+        </div>
+
+        <label class="form-label">Platô a partir da semana
+          <input type="number" name="plateau_week" value="<%= Math.min(8, evolutiveWeeks) %>" min="2" max="<%= evolutiveWeeks %>" />
+        </label>
+        <p class="muted small">Da semana 1 até esta semana, aplica crescimento. Depois disso, mantém estável.</p>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Aplicar curva</button>
+        </div>
+      </form>
+    </dialog>
+  <% } %>
+
+  <% if (!evolutiveEnabled) { %>
   <section class="funnel-floor sdr-floor">
     <div class="floor-header">
       <h2>Andar SDR</h2>
@@ -135,6 +302,7 @@
     <span class="save-status" id="save-status" data-state="idle">salvo</span>
     <button type="button" class="btn btn-primary" id="save-funnel">Salvar funil neste cenário (<%= activeScenario.name %>)</button>
   </div>
+  <% } %>
 </main>
 
 <dialog id="modal-add-member" class="modal">
@@ -151,5 +319,16 @@
   </form>
 </dialog>
 
+<% if (!evolutiveEnabled) { %>
 <script src="/js/funil.js?v=<%= assetVersion %>"></script>
+<% } else { %>
+<script>window.FUNNEL_EVOLUTIVE_INIT = <%- JSON.stringify({
+  scenarioId: activeScenario.id,
+  weeksCount: evolutiveWeeks,
+  funnelWeekly,
+  teamWeekly,
+  team: allTeam.map((m) => ({ id: m.id, name: m.name, role: m.role })),
+}) %>;</script>
+<script src="/js/funil-evolutivo.js?v=<%= assetVersion %>"></script>
+<% } %>
 <%- include('partials/footer') %>
