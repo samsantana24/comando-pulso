@@ -1,22 +1,87 @@
 :root {
-  --bg: #0F172A;
-  --surface: #1E293B;
-  --surface-2: #273548;
-  --text: #F1F5F9;
-  --muted: #94A3B8;
-  --accent: #2DD4BF;
-  --accent-strong: #14B8A6;
-  --danger: #EF4444;
-  --ok: #22C55E;
-  --warn: #F59E0B;
-  --border: #334155;
+  /* === BASE === */
+  --bg: #000000;
+  --bg-elevated: #0A0A0A;
+  --bg-card: #0E0E0F;
+  --bg-card-hover: #131315;
+  --fg: #FFFFFF;
+  --fg-soft: #C5C5C5;
+  --muted: #8A8A8A;
+  --dim: #5A5A5A;
 
+  /* === LINHAS === */
+  --line: rgba(255, 255, 255, 0.12);
+  --line-strong: rgba(255, 255, 255, 0.22);
+  --line-soft: rgba(255, 255, 255, 0.06);
+
+  /* === ACENTOS === */
+  --accent: #FF2E5A;
+  --accent-soft: rgba(255, 46, 90, 0.15);
+  --accent-glow: rgba(255, 46, 90, 0.35);
+  --accent-dim: rgba(255, 46, 90, 0.06);
+
+  --gold: #FFD700;
+  --gold-soft: rgba(255, 215, 0, 0.15);
+  --orange: #FFA500;
+  --orange-soft: rgba(255, 165, 0, 0.18);
+
+  /* === SEMÂNTICOS === */
+  --pos: #22C55E;
+  --pos-soft: rgba(34, 197, 94, 0.12);
+  --neg: #FF2E5A;
+  --neg-soft: rgba(255, 46, 90, 0.10);
+  --warn: #FFA500;
+  --warn-soft: rgba(255, 165, 0, 0.12);
+
+  /* === GRADIENTES === */
+  --gradient-glow-accent: radial-gradient(ellipse 100% 70% at 80% 60%, rgba(255, 46, 90, 0.06) 0%, #000 70%);
+  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+
+  /* === TIPOGRAFIA === */
+  --font-stack: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  --letter-tight: -0.02em;
+  --letter-wide: 0.08em;
+  --letter-mega: -0.04em;
+
+  /* === ESPAÇAMENTO === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* === RADIUS === */
+  --radius-sm: 6px;
   --radius: 10px;
-  --radius-lg: 14px;
-  --shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  --radius-lg: 16px;
+  --radius-xl: 22px;
 
-  --font-stack: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  /* === SHADOWS === */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 30px 60px rgba(0, 0, 0, 0.6);
+  --shadow-accent-glow: 0 0 80px rgba(255, 46, 90, 0.12);
+  --shadow-accent-glow-strong: 0 0 120px rgba(255, 46, 90, 0.25);
+
+  /* === MOTION === */
+  --ease-pulso: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 0.18s;
+  --duration: 0.32s;
+  --duration-slow: 0.6s;
+
+  /* === LEGACY ALIASES (compat com código pré-Onda 3) === */
+  --surface: var(--bg-card);
+  --surface-2: var(--bg-card-hover);
+  --text: var(--fg);
+  --border: var(--line);
+  --accent-strong: var(--accent);
+  --danger: var(--neg);
+  --ok: var(--pos);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -24,13 +89,91 @@
 html, body {
   margin: 0;
   padding: 0;
-  font-family: var(--font-stack);
   background: var(--bg);
-  color: var(--text);
-  font-size: 15px;
-  line-height: 1.5;
+  color: var(--fg);
+  font-family: var(--font-stack);
+  font-size: 14px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv11' 1, 'ss01' 1;
+}
+
+body { position: relative; }
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 100% 0%, rgba(255, 46, 90, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 0% 100%, rgba(255, 46, 90, 0.025) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+body > * { position: relative; z-index: 1; }
+
+::selection {
+  background: var(--accent);
+  color: var(--fg);
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--line-strong); }
+
+/* === TIPOGRAFIA — classes utilitárias === */
+.t-display {
+  font-size: clamp(40px, 5vw, 72px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+h1, .t-h1 {
+  font-size: clamp(28px, 3.2vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+h2, .t-h2 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.t-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+body, p, .t-body {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+.t-kpi {
+  font-size: clamp(28px, 2.4vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  font-variant-numeric: tabular-nums;
+}
+.t-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.t-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' 1;
 }
 
 body.auth {
