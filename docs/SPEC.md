@@ -377,15 +377,41 @@ Seções:
 - `PUT /api/funnel?scenario_id=...` — atualiza (upsert)
 
 **Caixa e Runway**
-- `GET /api/cashflow?from=...&to=...&scenario_id=...` — retorna array semanal `{ week_id, sun, sat, sales_real, costs_real, sales_projected, costs_projected, week_balance, cash_after }`
-- `GET /api/runway?scenario_id=...` — retorna `{ runway_weeks, projected_zero_date, current_cash }`
+- `GET /api/cashflow?past=N&future=N&scenario_id=` — retorna `{ cash_at_start, cash_today, projected_weekly_net, include_ads_in_runway, include_receivables_in_projection, series: [...] }`. Cada item da `series`: `{ week_id, sun, sat, label, is_past, is_current, is_future, sales_real, costs_paid, costs_planned, ads_paid, ads_planned, sales_projected, receivables_projected, top_costs: [{category, total}], week_delta, cash_after }`. **`sales_projected` e `receivables_projected` são SEMPRE separados — somar só se `include_receivables_in_projection=1`**.
+- `GET /api/cashflow/runway?scenario_id=` — retorna `{ runway_weeks, weekly_burn, current_cash }`. `runway_weeks` é número (1 casa decimal) ou string `"52+"` quando burn ≤ 0. Burn por semana = `costs_planned + costs_paid + (ads se include_ads=1) - sales_projected - (receivables se include_receivables=1)`.
 
 **Settings**
-- `GET /api/settings`
-- `PUT /api/settings` — batch update
+- `GET /api/settings` — retorna objeto key-value
+- `PUT /api/settings` — batch update. Whitelist: `initial_cash_brl`, `include_initial_cash`, `default_payment_tax_pct`, `include_ads_in_runway`, `include_receivables_in_projection`, `pedrra_visible_scenario_ids` (JSON array de scenario IDs)
 
 **Audit**
-- `GET /api/audit?limit=100`
+- `GET /api/audit?limit=100` (master only)
+
+**Categorias** (Onda 2)
+- `GET /api/categories` — retorna `{ list: [...], grouped: { "Salários": [...], ... } }`. Cada item: `{ id, name, group_name, display_order, active }`
+- `POST /api/categories` (master) — body `{ name, group_name, display_order? }` — 400 se nome duplicado
+- `PATCH /api/categories/:id` (master) — body `{ name?, group_name?, display_order? }`. Renomear executa **transação que atualiza todos os custos com a categoria antiga** (`UPDATE costs SET category=? WHERE category=?`)
+- `DELETE /api/categories/:id?move_to=<nome>` (master) — se houver custos associados e `move_to` ausente, retorna 400 com `{ error, costs_count, category_name, code: 'HAS_COSTS' }`. Se `move_to` presente, transação move custos pra categoria-destino antes de deletar.
+
+**Investimento em Ads** (Onda 2)
+- `GET /api/ads-week?from=&to=&scenario_id=` — retorna array agrupado por semana: `{ week_id, sun, sat, label, total, count }`
+- `POST /api/ads-week` (master) — body `{ week_start_date: 'YYYY-MM-DD', total_amount: number, scenario_id?: number|null }`. Lógica: pega range dom→sáb da semana, **apaga (DELETE com WHERE específico) os 7 custos existentes com is_ads=1 daquela semana e mesmo scenario_id**, insere 7 novos custos com `amount = total_amount/7` (sem truncar), `is_ads=1`, `category='Tráfego Pago (Google / Meta Ads)'`, `status='planned'`. Tudo numa transação. Resposta: `{ week_id, week_start, total_amount, daily_amount, occurrences: [...] }`
+- `DELETE /api/ads-week?week_start_date=&scenario_id=` (master) — remove os 7 custos da semana
+
+**Recebíveis** (Onda 2)
+- `GET /api/receivables?status=&from=&to=` — retorna lista
+- `POST /api/receivables` — body `{ expected_date, expected_amount, payment_method?, client_name?, notes?, sale_id? }`. `expected_amount` deve ser > 0
+- `POST /api/receivables/sale-with-installments` — body `{ date, gross_amount, net_amount, client_name?, closer_id?, payment_method?, notes?, installments: [{expected_date, expected_amount, payment_method?}] }`. Cria 1 sale (parte paga hoje) + N receivables com status=pending, todos atomicamente
+- `PATCH /api/receivables/:id` — edita campos
+- `POST /api/receivables/:id/mark-received` — body `{ received_date?, net_amount? }`. Cria sale com a data informada e marca o recebível como `status='received'`, vinculando `received_sale_id`. Em transação.
+- `DELETE /api/receivables/:id` — soft delete (status=cancelled) se tem `sale_id`, hard delete se órfão
+
+**Validações comuns** (Onda 2.5)
+Todos os POSTs/PATCHes de `sales`, `costs`, `receivables`, `ads-week`:
+- `date` (e `expected_date`, `received_date`, `recurrence_start`, `recurrence_end`, `week_start_date`): formato `YYYY-MM-DD`, no range `2025-01-01 a 2030-12-31`
+- `gross_amount` / `net_amount` / `total_amount`: ≥ 0
+- `amount` / `expected_amount`: > 0
+- Categoria `'Tráfego Pago (Google / Meta Ads)'` em `/api/costs` (com `is_ads != 1`): rejeitada com 400 — usar `/api/ads-week`
 
 ---
 
