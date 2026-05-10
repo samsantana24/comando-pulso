@@ -236,6 +236,17 @@ function runMigrations(db) {
 
     CREATE INDEX IF NOT EXISTS idx_funnel_weekly_scenario ON scenario_funnel_weekly(scenario_id);
     CREATE INDEX IF NOT EXISTS idx_team_weekly_scenario ON scenario_team_weekly(scenario_id);
+
+    CREATE TABLE IF NOT EXISTS weekly_sales_overrides (
+      scenario_id INTEGER NOT NULL,
+      week_id TEXT NOT NULL,
+      sales_projected REAL NOT NULL,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_by TEXT,
+      PRIMARY KEY (scenario_id, week_id),
+      FOREIGN KEY (scenario_id) REFERENCES scenarios(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_wso_scenario ON weekly_sales_overrides(scenario_id);
   `);
 }
 

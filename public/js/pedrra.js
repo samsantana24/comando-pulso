@@ -50,13 +50,40 @@
 
   function cloneSeries(arr) { return arr.map((s) => ({ ...s })); }
 
+  const persistTimers = {};
+  function scheduleOverridePersist(weekId, value) {
+    if (!initial.activeScenario || !initial.activeScenario.id) return;
+    clearTimeout(persistTimers[weekId]);
+    persistTimers[weekId] = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/weekly-overrides', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scenario_id: initial.activeScenario.id,
+            week_id: weekId,
+            sales_projected: Number(value) || 0,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          if (window.toast) window.toast('Erro ao salvar venda projetada: ' + (err.error || res.status));
+        }
+      } catch (e) {
+        if (window.toast) window.toast('Erro: ' + e.message);
+      }
+    }, 600);
+  }
+
   function recompute(seriesRef = projection, startCash = cashAtStart) {
     const includeReceivables = !!initial.includeReceivablesInProjection;
     let cum = startCash;
     for (const w of seriesRef) {
       let delta;
-      if (w.is_past || w.is_current) {
+      if (w.is_past) {
         delta = Number(w.sales_real || 0) - Number(w.costs_paid || 0) - Number(w.ads_paid || 0);
+      } else if (w.is_current) {
+        delta = Number(w.sales_real || 0) - Number(w.costs_paid || 0) - Number(w.costs_planned || 0) - Number(w.ads_paid || 0) - Number(w.ads_planned || 0);
       } else {
         const recvContrib = includeReceivables ? Number(w.receivables_projected || 0) : 0;
         delta = Number(w.sales_projected || 0) + recvContrib - Number(w.costs_planned || 0) - Number(w.ads_planned || 0);
@@ -316,14 +343,25 @@
       const salesCell = w.is_future
         ? `<input type="number" min="0" step="100" value="${Math.round(w.sales_projected)}" data-week="${w.week_id}" />${recvHint}`
         : BRL.format(w.sales_real);
-      const costsCell = (w.is_past || w.is_current) ? BRL.format(w.costs_paid) : BRL.format(w.costs_planned);
-      const adsCell = (w.is_past || w.is_current) ? BRL.format(w.ads_paid) : BRL.format(w.ads_planned);
+      let costsNum, adsNum;
+      if (w.is_past) {
+        costsNum = Number(w.costs_paid || 0);
+        adsNum = Number(w.ads_paid || 0);
+      } else if (w.is_current) {
+        costsNum = Number(w.costs_paid || 0) + Number(w.costs_planned || 0);
+        adsNum = Number(w.ads_paid || 0) + Number(w.ads_planned || 0);
+      } else {
+        costsNum = Number(w.costs_planned || 0);
+        adsNum = Number(w.ads_planned || 0);
+      }
+      const totalCostNum = costsNum + adsNum;
       const deltaClass = w.week_delta >= 0 ? 'pos' : 'neg';
       tr.innerHTML = `
         <td>${w.label} <span class="muted">${w.week_id}</span></td>
         <td class="num sales-cell">${salesCell}</td>
-        <td class="num">${costsCell}</td>
-        <td class="num ads-cell">${adsCell}</td>
+        <td class="num">${BRL.format(costsNum)}</td>
+        <td class="num ads-cell">${BRL.format(adsNum)}</td>
+        <td class="num total-cost-cell">${BRL.format(totalCostNum)}</td>
         <td class="num ${deltaClass}">${BRL.format(w.week_delta)}</td>
         <td class="num">${BRL.format(w.cash_after)}</td>
       `;
@@ -337,16 +375,16 @@
         recompute();
         if (chart) {
           const { realCash, projCash, costsBars, adsBars } = buildLabelsAndData();
-          // Custos and Ads não mudam com edits de venda; só caixa
           chart.data.datasets[2].data = realCash;
           chart.data.datasets[3].data = projCash;
           chart.update('none');
         }
         const row = inp.closest('tr');
         const delta = w.week_delta;
-        row.children[4].textContent = BRL.format(delta);
-        row.children[4].className = 'num ' + (delta >= 0 ? 'pos' : 'neg');
-        row.children[5].textContent = BRL.format(w.cash_after);
+        row.children[5].textContent = BRL.format(delta);
+        row.children[5].className = 'num ' + (delta >= 0 ? 'pos' : 'neg');
+        row.children[6].textContent = BRL.format(w.cash_after);
+        scheduleOverridePersist(w.week_id, w.sales_projected);
       });
     });
   }
