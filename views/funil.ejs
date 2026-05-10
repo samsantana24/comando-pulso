@@ -89,6 +89,12 @@
                 <% } %>
               </tr>
             <% } %>
+            <tr class="result-row result-row-secondary" data-result="reunioes_realizadas">
+              <td class="param-name">Reuniões realizadas <span class="muted small">(SDRs + rebarba SB × show rate)</span></td>
+              <% for (let i = 1; i <= evolutiveWeeks; i++) { %>
+                <td class="week-cell-result" data-week="<%= i %>">—</td>
+              <% } %>
+            </tr>
             <tr class="result-row" data-result="receita_liquida">
               <td class="param-name">Receita projetada líquida</td>
               <% for (let i = 1; i <= evolutiveWeeks; i++) { %>

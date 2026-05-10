@@ -1514,6 +1514,14 @@ button, a, [role="button"], .scenario-item, [data-modal] {
   font-weight: 600;
 }
 
+.result-row.result-row-secondary td {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--fg-soft);
+  font-weight: 600;
+}
+.result-row.result-row-secondary .param-name { color: var(--muted); font-weight: 700; }
+.param-name .small { font-size: 10px; font-weight: 500; }
+
 .chart-controls {
   display: flex;
   gap: 14px;

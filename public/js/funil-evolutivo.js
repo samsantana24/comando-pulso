@@ -153,8 +153,10 @@
       const week = readWeekRow(i);
       const tp = teamForWeek(i);
       const proj = computeWeekProjection(week, tp);
-      const cell = tableEl.querySelector('tr.result-row td[data-week="' + i + '"]');
-      if (cell) cell.textContent = BRL.format(proj.receitaLiquida);
+      const cellLiq = tableEl.querySelector('tr.result-row[data-result="receita_liquida"] td[data-week="' + i + '"]');
+      if (cellLiq) cellLiq.textContent = BRL.format(proj.receitaLiquida);
+      const cellReu = tableEl.querySelector('tr.result-row[data-result="reunioes_realizadas"] td[data-week="' + i + '"]');
+      if (cellReu) cellReu.textContent = String(Math.floor(Number(proj.callsRealizadas) || 0));
     }
   }
 
