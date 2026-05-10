@@ -1468,7 +1468,31 @@ button, a, [role="button"], .scenario-item, [data-modal] {
 }
 .visible-toggle input[type="checkbox"] { margin: 0; }
 
-.projection-table .ads-cell { color: #FBBF24; }
+.projection-table .ads-cell { color: var(--orange); }
+.projection-table .total-cost-cell { color: var(--fg-soft); font-weight: 600; }
+.projection-table .sales-cell { position: relative; }
+.persist-badge {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.persist-badge[data-state="pending"] { color: var(--warn); }
+.persist-badge[data-state="saving"] { color: var(--muted); }
+.persist-badge[data-state="saved"] { color: var(--pos); }
+.persist-badge[data-state="error"] { color: var(--neg); }
+
+.proj-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.proj-toolbar h3 { margin: 0; }
+.proj-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .chart-controls {
   display: flex;

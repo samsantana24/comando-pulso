@@ -130,7 +130,7 @@ router.post('/evolutive/:scenarioId/enable', requireMaster, (req, res) => {
   const scenario = scenarios.getById(sid);
   if (!scenario) return res.status(404).json({ error: 'cenário não encontrado' });
   const weeksReq = Number((req.body || {}).weeks) || 12;
-  if (![4, 8, 12, 24].includes(weeksReq)) return res.status(400).json({ error: 'weeks deve ser 4, 8, 12 ou 24' });
+  if (![4, 6, 8, 12, 24].includes(weeksReq)) return res.status(400).json({ error: 'weeks deve ser 4, 6, 8, 12 ou 24' });
 
   const baseFunnel = funnel.getByScenario(sid) || {
     ads_per_week: 0, cpl: 0, rebarba_sb_per_week: 0,

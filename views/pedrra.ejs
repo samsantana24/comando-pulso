@@ -84,7 +84,13 @@
   </section>
 
   <section class="projection-table-wrap">
-    <h3>Projeção semana a semana <span class="muted">(edite "vendas projetadas" pra simular)</span></h3>
+    <div class="proj-toolbar">
+      <h3>Projeção semana a semana <span class="muted">(edite "vendas projetadas" pra simular)</span></h3>
+      <div class="proj-actions">
+        <button type="button" class="btn btn-ghost btn-small" id="btn-apply-curve">Esboçar curva</button>
+        <button type="button" class="btn btn-ghost btn-small" id="btn-reset-overrides">Resetar pro funil</button>
+      </div>
+    </div>
     <table class="projection-table" id="projection-table">
       <thead>
         <tr>

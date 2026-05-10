@@ -51,29 +51,86 @@
   function cloneSeries(arr) { return arr.map((s) => ({ ...s })); }
 
   const persistTimers = {};
+  const pendingValues = {};
+
+  function setPersistStatus(weekId, state, text) {
+    document.querySelectorAll('input[data-week="' + weekId + '"]').forEach((inp) => {
+      const row = inp.closest('tr');
+      if (!row) return;
+      let badge = row.querySelector('.persist-badge');
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'persist-badge';
+        inp.parentNode.appendChild(badge);
+      }
+      badge.dataset.state = state;
+      badge.textContent = text || '';
+    });
+  }
+
+  async function flushOverridePersist(weekId) {
+    if (!initial.activeScenario || !initial.activeScenario.id) return;
+    if (!(weekId in pendingValues)) return;
+    const value = pendingValues[weekId];
+    delete pendingValues[weekId];
+    if (persistTimers[weekId]) {
+      clearTimeout(persistTimers[weekId]);
+      delete persistTimers[weekId];
+    }
+    setPersistStatus(weekId, 'saving', 'salvando…');
+    try {
+      const res = await fetch('/api/weekly-overrides', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scenario_id: initial.activeScenario.id,
+          week_id: weekId,
+          sales_projected: Number(value) || 0,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setPersistStatus(weekId, 'error', '✗ erro');
+        if (window.toast) window.toast('Erro ao salvar venda projetada: ' + (err.error || res.status));
+        return;
+      }
+      const d = new Date();
+      const hh = ('0' + d.getHours()).slice(-2);
+      const mm = ('0' + d.getMinutes()).slice(-2);
+      setPersistStatus(weekId, 'saved', '✓ salvo ' + hh + ':' + mm);
+    } catch (e) {
+      setPersistStatus(weekId, 'error', '✗ erro');
+      if (window.toast) window.toast('Erro: ' + e.message);
+    }
+  }
+
   function scheduleOverridePersist(weekId, value) {
     if (!initial.activeScenario || !initial.activeScenario.id) return;
+    pendingValues[weekId] = value;
+    setPersistStatus(weekId, 'pending', 'pendente…');
     clearTimeout(persistTimers[weekId]);
-    persistTimers[weekId] = setTimeout(async () => {
-      try {
-        const res = await fetch('/api/weekly-overrides', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            scenario_id: initial.activeScenario.id,
-            week_id: weekId,
-            sales_projected: Number(value) || 0,
-          }),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          if (window.toast) window.toast('Erro ao salvar venda projetada: ' + (err.error || res.status));
-        }
-      } catch (e) {
-        if (window.toast) window.toast('Erro: ' + e.message);
-      }
-    }, 600);
+    persistTimers[weekId] = setTimeout(() => flushOverridePersist(weekId), 500);
   }
+
+  function flushAllPendingBeacon() {
+    if (!initial.activeScenario || !initial.activeScenario.id) return;
+    const keys = Object.keys(pendingValues);
+    if (keys.length === 0) return;
+    if (typeof navigator.sendBeacon !== 'function') return;
+    for (const weekId of keys) {
+      const body = JSON.stringify({
+        scenario_id: initial.activeScenario.id,
+        week_id: weekId,
+        sales_projected: Number(pendingValues[weekId]) || 0,
+      });
+      const blob = new Blob([body], { type: 'application/json' });
+      navigator.sendBeacon('/api/weekly-overrides/beacon', blob);
+    }
+  }
+  window.addEventListener('beforeunload', flushAllPendingBeacon);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushAllPendingBeacon();
+  });
 
   function recompute(seriesRef = projection, startCash = cashAtStart) {
     const includeReceivables = !!initial.includeReceivablesInProjection;
@@ -368,7 +425,7 @@
       tbody.appendChild(tr);
     }
     tbody.querySelectorAll('input[data-week]').forEach((inp) => {
-      inp.addEventListener('input', () => {
+      const onValueChanged = () => {
         const w = projection.find((x) => x.week_id === inp.dataset.week);
         if (!w) return;
         w.sales_projected = Number(inp.value) || 0;
@@ -384,7 +441,24 @@
         row.children[5].textContent = BRL.format(delta);
         row.children[5].className = 'num ' + (delta >= 0 ? 'pos' : 'neg');
         row.children[6].textContent = BRL.format(w.cash_after);
-        scheduleOverridePersist(w.week_id, w.sales_projected);
+      };
+      inp.addEventListener('input', () => {
+        onValueChanged();
+        const w = projection.find((x) => x.week_id === inp.dataset.week);
+        if (w) scheduleOverridePersist(w.week_id, w.sales_projected);
+      });
+      inp.addEventListener('change', () => {
+        const w = projection.find((x) => x.week_id === inp.dataset.week);
+        if (!w) return;
+        pendingValues[w.week_id] = w.sales_projected;
+        flushOverridePersist(w.week_id);
+      });
+      inp.addEventListener('blur', () => {
+        const w = projection.find((x) => x.week_id === inp.dataset.week);
+        if (!w) return;
+        if (w.week_id in pendingValues) {
+          flushOverridePersist(w.week_id);
+        }
       });
     });
   }
@@ -475,6 +549,65 @@
 
   document.getElementById('past-weeks').addEventListener('change', loadWindow);
   document.getElementById('future-weeks').addEventListener('change', loadWindow);
+
+  const btnApplyCurve = document.getElementById('btn-apply-curve');
+  if (btnApplyCurve) {
+    btnApplyCurve.addEventListener('click', () => {
+      if (!initial.activeScenario || !initial.activeScenario.id) {
+        if (window.toast) window.toast('Sem cenário ativo');
+        return;
+      }
+      const futureWeeks = projection.filter((w) => w.is_future);
+      if (futureWeeks.length === 0) {
+        if (window.toast) window.toast('Aumente "Futuro" pra esboçar mais semanas');
+        return;
+      }
+      const startStr = window.prompt(
+        'Esboçar curva: valor inicial da semana 1 (R$).\n' +
+        'Aplicará nas ' + futureWeeks.length + ' semanas futuras visíveis.',
+        '5000'
+      );
+      if (startStr === null) return;
+      const start = Number(startStr);
+      if (!Number.isFinite(start) || start < 0) { if (window.toast) window.toast('Valor inválido'); return; }
+      const growthStr = window.prompt('Crescimento por semana (% — use 0 pra valor fixo, 10 pra +10% a cada semana):', '0');
+      if (growthStr === null) return;
+      const growth = Number(growthStr) / 100;
+      if (!Number.isFinite(growth)) { if (window.toast) window.toast('Crescimento inválido'); return; }
+
+      futureWeeks.forEach((w, idx) => {
+        const value = Math.round(start * Math.pow(1 + growth, idx));
+        w.sales_projected = value;
+        pendingValues[w.week_id] = value;
+      });
+      recompute();
+      render();
+      futureWeeks.forEach((w) => flushOverridePersist(w.week_id));
+      if (window.toast) window.toast('Curva aplicada em ' + futureWeeks.length + ' semanas');
+    });
+  }
+
+  const btnResetOverrides = document.getElementById('btn-reset-overrides');
+  if (btnResetOverrides) {
+    btnResetOverrides.addEventListener('click', async () => {
+      if (!initial.activeScenario || !initial.activeScenario.id) {
+        if (window.toast) window.toast('Sem cenário ativo');
+        return;
+      }
+      if (!confirm('Resetar todas as projeções pro valor do funil? Isso apaga todos os esboços manuais deste cenário.')) return;
+      try {
+        const res = await fetch('/api/weekly-overrides/clear?scenario_id=' + initial.activeScenario.id, { method: 'POST' });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          if (window.toast) window.toast('Erro: ' + (err.error || res.status));
+          return;
+        }
+        window.location.reload();
+      } catch (e) {
+        if (window.toast) window.toast('Erro: ' + e.message);
+      }
+    });
+  }
 
   recompute();
 
