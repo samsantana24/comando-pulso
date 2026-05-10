@@ -1494,6 +1494,26 @@ button, a, [role="button"], .scenario-item, [data-modal] {
 .proj-toolbar h3 { margin: 0; }
 .proj-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
+.timeline-start-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.timeline-start-label input[type="date"] {
+  width: auto;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.recv-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .chart-controls {
   display: flex;
   gap: 14px;

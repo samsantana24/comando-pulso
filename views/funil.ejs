@@ -41,6 +41,11 @@
       <div class="timeline-header">
         <h2>Timeline · <%= evolutiveWeeks %> semanas</h2>
         <div class="timeline-actions">
+          <label class="timeline-start-label">
+            <span class="muted">A partir da semana:</span>
+            <input type="date" id="evolutive-start-date" value="<%= evolutiveStartDate || todayYmd %>" />
+          </label>
+          <button type="button" class="btn-link" id="btn-reset-start-date" title="Voltar pro automático (semana atual)">resetar</button>
           <span id="evo-save-status" class="save-status" data-state="idle">salvo</span>
           <button type="button" class="btn btn-primary btn-small" id="btn-save-timeline">Salvar timeline</button>
         </div>

@@ -202,6 +202,7 @@ function runMigrations(db) {
   addColumnIfMissing(db, 'costs', 'from_initial_seed', 'INTEGER DEFAULT 0');
   addColumnIfMissing(db, 'scenarios', 'evolutive_funnel_enabled', 'INTEGER DEFAULT 0');
   addColumnIfMissing(db, 'scenarios', 'evolutive_funnel_weeks', 'INTEGER DEFAULT 12');
+  addColumnIfMissing(db, 'scenarios', 'evolutive_funnel_start_date', 'TEXT');
 
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_costs_is_ads ON costs(is_ads);

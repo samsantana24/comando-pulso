@@ -140,7 +140,11 @@
       if (w.is_past) {
         delta = Number(w.sales_real || 0) - Number(w.costs_paid || 0) - Number(w.ads_paid || 0);
       } else if (w.is_current) {
-        delta = Number(w.sales_real || 0) - Number(w.costs_paid || 0) - Number(w.costs_planned || 0) - Number(w.ads_paid || 0) - Number(w.ads_planned || 0);
+        const overridden = !!w.sales_projected_overridden;
+        const salesValue = overridden
+          ? Math.max(Number(w.sales_projected || 0), Number(w.sales_real || 0))
+          : Number(w.sales_real || 0);
+        delta = salesValue - Number(w.costs_paid || 0) - Number(w.costs_planned || 0) - Number(w.ads_paid || 0) - Number(w.ads_planned || 0);
       } else {
         const recvContrib = includeReceivables ? Number(w.receivables_projected || 0) : 0;
         delta = Number(w.sales_projected || 0) + recvContrib - Number(w.costs_planned || 0) - Number(w.ads_planned || 0);
@@ -397,9 +401,19 @@
       const recvHint = (w.is_future && initial.includeReceivablesInProjection && recvProj > 0)
         ? `<span class="recv-hint" title="Recebíveis previstos nesta semana, somados à projeção de caixa">+ ${BRL.format(recvProj)} receb.</span>`
         : '';
-      const salesCell = w.is_future
-        ? `<input type="number" min="0" step="100" value="${Math.round(w.sales_projected)}" data-week="${w.week_id}" />${recvHint}`
-        : BRL.format(w.sales_real);
+      let salesCell;
+      if (w.is_future) {
+        salesCell = `<input type="number" min="0" step="100" value="${Math.round(w.sales_projected)}" data-week="${w.week_id}" />${recvHint}`;
+      } else if (w.is_current) {
+        const realValue = Number(w.sales_real || 0);
+        const initialEditValue = w.sales_projected_overridden
+          ? Math.round(Number(w.sales_projected || 0))
+          : Math.round(realValue);
+        const realHint = `<span class="recv-hint" title="Vendas reais já lançadas nesta semana">real ${BRL.format(realValue)}</span>`;
+        salesCell = `<input type="number" min="0" step="100" value="${initialEditValue}" data-week="${w.week_id}" />${realHint}`;
+      } else {
+        salesCell = BRL.format(w.sales_real);
+      }
       let costsNum, adsNum;
       if (w.is_past) {
         costsNum = Number(w.costs_paid || 0);
@@ -429,6 +443,7 @@
         const w = projection.find((x) => x.week_id === inp.dataset.week);
         if (!w) return;
         w.sales_projected = Number(inp.value) || 0;
+        w.sales_projected_overridden = true;
         recompute();
         if (chart) {
           const { realCash, projCash, costsBars, adsBars } = buildLabelsAndData();
@@ -557,9 +572,9 @@
         if (window.toast) window.toast('Sem cenário ativo');
         return;
       }
-      const futureWeeks = projection.filter((w) => w.is_future);
+      const futureWeeks = projection.filter((w) => w.is_future || w.is_current);
       if (futureWeeks.length === 0) {
-        if (window.toast) window.toast('Aumente "Futuro" pra esboçar mais semanas');
+        if (window.toast) window.toast('Sem semanas pra esboçar');
         return;
       }
       const startStr = window.prompt(
@@ -578,6 +593,7 @@
       futureWeeks.forEach((w, idx) => {
         const value = Math.round(start * Math.pow(1 + growth, idx));
         w.sales_projected = value;
+        w.sales_projected_overridden = true;
         pendingValues[w.week_id] = value;
       });
       recompute();

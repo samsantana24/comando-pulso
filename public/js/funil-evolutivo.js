@@ -19,9 +19,41 @@
 
   const statusEl = document.getElementById('evo-save-status');
   const saveBtn = document.getElementById('btn-save-timeline');
+  const startDateInput = document.getElementById('evolutive-start-date');
+  const resetStartBtn = document.getElementById('btn-reset-start-date');
   let saveTimer = null;
   let inFlight = false;
   let pendingAfter = false;
+
+  async function persistStartDate(value) {
+    try {
+      const res = await fetch('/api/funnel/evolutive/' + scenarioId + '/start-date', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start_date: value || null }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (window.toast) window.toast('Erro ao salvar semana inicial: ' + (err.error || res.status));
+        return;
+      }
+      if (window.toast) window.toast(value ? '✓ Semana inicial salva: ' + value : '✓ Semana inicial: automático');
+    } catch (e) {
+      if (window.toast) window.toast('Erro: ' + e.message);
+    }
+  }
+
+  if (startDateInput) {
+    startDateInput.addEventListener('change', () => {
+      persistStartDate(startDateInput.value);
+    });
+  }
+  if (resetStartBtn) {
+    resetStartBtn.addEventListener('click', async () => {
+      if (startDateInput) startDateInput.value = '';
+      await persistStartDate(null);
+    });
+  }
 
   function pad2(n) { return ('0' + n).slice(-2); }
   function nowHHMM() {

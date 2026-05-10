@@ -65,9 +65,24 @@ router.get('/evolutive/:scenarioId', requireMaster, (req, res) => {
     scenario_id: sid,
     enabled: !!scenario.evolutive_funnel_enabled,
     weeks_count: Number(scenario.evolutive_funnel_weeks) || 12,
+    start_date: scenario.evolutive_funnel_start_date || null,
     funnel_weekly: funnel.getWeeklyForScenario(sid),
     team_weekly: funnel.getTeamWeeklyForScenario(sid),
   });
+});
+
+router.patch('/evolutive/:scenarioId/start-date', requireMaster, (req, res) => {
+  const sid = Number(req.params.scenarioId);
+  const scenario = scenarios.getById(sid);
+  if (!scenario) return res.status(404).json({ error: 'cenário não encontrado' });
+  const startDate = (req.body || {}).start_date;
+  if (startDate !== null && (typeof startDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(startDate))) {
+    return res.status(400).json({ error: 'start_date deve ser YYYY-MM-DD ou null pra resetar' });
+  }
+  const before = scenario.evolutive_funnel_start_date;
+  db.prepare('UPDATE scenarios SET evolutive_funnel_start_date = ? WHERE id = ?').run(startDate || null, sid);
+  audit(req, 'UPDATE', 'scenarios', sid, { evolutive_funnel_start_date: before }, { evolutive_funnel_start_date: startDate });
+  res.json({ ok: true, start_date: startDate || null });
 });
 
 router.put('/evolutive/:scenarioId', requireMaster, (req, res) => {

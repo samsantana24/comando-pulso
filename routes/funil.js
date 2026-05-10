@@ -31,8 +31,11 @@ router.get('/', requireAuth, requireNav('nav.funil'), requireTotp, (req, res) =>
 
   const evolutiveEnabled = !!active.evolutive_funnel_enabled;
   const evolutiveWeeks = Number(active.evolutive_funnel_weeks) || 12;
+  const evolutiveStartDate = active.evolutive_funnel_start_date || null;
   const funnelWeekly = evolutiveEnabled ? funnel.getWeeklyForScenario(active.id) : [];
   const teamWeekly = evolutiveEnabled ? funnel.getTeamWeeklyForScenario(active.id) : [];
+
+  const { todayYmd } = require('../lib/weeks');
 
   res.render('funil', {
     title: 'Funil',
@@ -44,9 +47,11 @@ router.get('/', requireAuth, requireNav('nav.funil'), requireTotp, (req, res) =>
     closers: closers.map(joinPerf),
     evolutiveEnabled,
     evolutiveWeeks,
+    evolutiveStartDate,
     funnelWeekly,
     teamWeekly,
     allTeam: [...sdrs, ...closers],
+    todayYmd: todayYmd(),
   });
 });
 
