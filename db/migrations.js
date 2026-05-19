@@ -196,6 +196,11 @@ function runMigrations(db) {
 
     INSERT OR IGNORE INTO permissions (role, perm_key, allowed) VALUES
       ('financeiro', 'action.export_data', 1);
+
+    INSERT OR IGNORE INTO permissions (role, perm_key, allowed) VALUES
+      ('financeiro', 'action.add_category', 1),
+      ('financeiro', 'action.edit_category', 1),
+      ('financeiro', 'action.delete_category', 1);
   `);
 
   addColumnIfMissing(db, 'costs', 'is_ads', 'INTEGER DEFAULT 0');

@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const categories = require('../../db/queries/categories');
 const { audit } = require('../../lib/audit');
-const { requireMaster } = require('../../lib/auth');
+const { requirePerm } = require('../../lib/permissions');
 
 router.get('/', (req, res) => {
   const list = categories.list();
@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
   res.json({ list, grouped });
 });
 
-router.post('/', requireMaster, (req, res) => {
+router.post('/', requirePerm('action.add_category'), (req, res) => {
   const { name, group_name, display_order } = req.body || {};
   const trimmed = name ? String(name).trim() : '';
   if (!trimmed) return res.status(400).json({ error: 'name é obrigatório' });
@@ -26,7 +26,7 @@ router.post('/', requireMaster, (req, res) => {
   res.status(201).json(created);
 });
 
-router.patch('/:id', requireMaster, (req, res) => {
+router.patch('/:id', requirePerm('action.edit_category'), (req, res) => {
   const id = Number(req.params.id);
   const before = categories.getById(id);
   if (!before) return res.status(404).json({ error: 'categoria não encontrada' });
@@ -47,7 +47,7 @@ router.patch('/:id', requireMaster, (req, res) => {
   res.json(updated);
 });
 
-router.delete('/:id', requireMaster, (req, res) => {
+router.delete('/:id', requirePerm('action.delete_category'), (req, res) => {
   const id = Number(req.params.id);
   const before = categories.getById(id);
   if (!before) return res.status(404).json({ error: 'categoria não encontrada' });

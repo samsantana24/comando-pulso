@@ -278,7 +278,7 @@
     <div class="receivables-header">
       <div>
         <h2>Recebíveis</h2>
-        <span class="subtitle">Próximos 60 dias · clique numa linha pra ver detalhes</span>
+        <span class="subtitle">Todos os pendentes (sem limite) · clique numa linha pra ver detalhes</span>
       </div>
       <% if (userCan('action.export_data')) { %>
         <button type="button" class="btn btn-ghost btn-small btn-with-icon" data-modal="export" data-export-default="receivables">
@@ -356,7 +356,119 @@
       </tbody>
     </table>
   </section>
+
+  <!-- Catálogo de categorias (Rachel + Sâmeque) -->
+  <% if (userCan('action.add_category') || userCan('action.edit_category') || userCan('action.delete_category')) { %>
+  <section class="settings-card" style="margin-top: 24px;">
+    <h2>Categorias de custo</h2>
+    <p class="muted">Organize as categorias por grupo. Renomear uma categoria atualiza automaticamente todos os custos que a usam.</p>
+    <% if (userCan('action.add_category')) { %>
+      <button type="button" class="btn btn-primary btn-small" id="btn-new-category">+ Nova categoria</button>
+    <% } %>
+    <div class="cat-groups" id="cat-groups">
+      <% for (const grp of orderedCatGroups) { %>
+        <div class="cat-group">
+          <h3><%= grp %></h3>
+          <ul class="cat-list">
+            <% for (const c of (categoriesByGroupFull[grp] || [])) { %>
+              <li data-id="<%= c.id %>">
+                <span class="cat-name"><%= c.name %></span>
+                <span class="cat-actions">
+                  <% if (userCan('action.edit_category')) { %>
+                    <button type="button" class="btn-link" data-action="edit-category" data-id="<%= c.id %>" data-name="<%- c.name.replace(/"/g, '&quot;') %>" data-group="<%- c.group_name.replace(/"/g, '&quot;') %>">editar</button>
+                  <% } %>
+                  <% if (userCan('action.delete_category')) { %>
+                    <button type="button" class="btn-link danger" data-action="delete-category" data-id="<%= c.id %>" data-name="<%- c.name.replace(/"/g, '&quot;') %>">excluir</button>
+                  <% } %>
+                </span>
+              </li>
+            <% } %>
+          </ul>
+        </div>
+      <% } %>
+    </div>
+  </section>
+  <% } %>
+
+  <!-- Todos os custos (busca/edição) -->
+  <% if (userCan('action.edit_cost') || userCan('action.delete_cost') || userCan('nav.custos')) { %>
+  <section class="receivables-section" style="margin-top: 24px;">
+    <div class="recv-head">
+      <div>
+        <span class="t-eyebrow">TODOS OS CUSTOS</span>
+        <span class="subtitle">Busca completa — clique numa linha pra editar</span>
+      </div>
+    </div>
+    <div class="all-costs-filters" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: end; padding: 12px 0;">
+      <label class="form-label" style="margin: 0;">De
+        <input type="date" id="all-costs-from" value="<%= weeks[0].sun.slice(0, 7) + '-01' %>" />
+      </label>
+      <label class="form-label" style="margin: 0;">Até
+        <input type="date" id="all-costs-to" value="2030-12-31" />
+      </label>
+      <label class="form-label" style="margin: 0;">Categoria
+        <select id="all-costs-cat">
+          <option value="">Todas</option>
+          <% for (const grp of orderedCatGroups) { %>
+            <optgroup label="<%= grp %>">
+              <% for (const c of (categoriesByGroupFull[grp] || [])) { %>
+                <option value="<%= c.name %>"><%= c.name %></option>
+              <% } %>
+            </optgroup>
+          <% } %>
+        </select>
+      </label>
+      <label class="form-label" style="margin: 0;">Status
+        <select id="all-costs-status">
+          <option value="">Todos</option>
+          <option value="paid">Pago</option>
+          <option value="planned">A pagar</option>
+        </select>
+      </label>
+      <button type="button" class="btn btn-primary btn-small" id="btn-all-costs-search">Buscar</button>
+      <span class="muted" id="all-costs-count"></span>
+    </div>
+    <div style="overflow-x: auto;">
+      <table class="rec-table" id="all-costs-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Categoria</th>
+            <th>Descrição</th>
+            <th class="num">Valor</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="all-costs-tbody">
+          <tr><td colspan="6" class="muted center" style="padding: 20px;">Clique em "Buscar" pra carregar.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <% } %>
 </main>
+
+<dialog id="modal-category" class="modal">
+  <form id="form-category">
+    <h2 id="modal-cat-title">Nova categoria</h2>
+    <input type="hidden" name="id" />
+    <label class="form-label">Nome
+      <input type="text" name="name" required />
+    </label>
+    <label class="form-label">Grupo
+      <select name="group_name" required>
+        <% for (const grp of orderedCatGroups) { %>
+          <option value="<%= grp %>"><%= grp %></option>
+        <% } %>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</dialog>
 
 <dialog id="modal-edit-sale" class="modal">
   <form class="api-form" data-endpoint="" data-method="PATCH">

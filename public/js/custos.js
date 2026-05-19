@@ -1,6 +1,188 @@
 (function () {
   const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  // === Categorias CRUD (Rachel + Sâmeque) ===
+  const catModal = document.getElementById('modal-category');
+  const catForm = document.getElementById('form-category');
+  const catTitleEl = document.getElementById('modal-cat-title');
+  const btnNewCat = document.getElementById('btn-new-category');
+  if (btnNewCat && catModal && catForm) {
+    btnNewCat.addEventListener('click', () => {
+      if (catTitleEl) catTitleEl.textContent = 'Nova categoria';
+      catForm.reset();
+      catForm.elements.id.value = '';
+      catModal.showModal();
+    });
+  }
+  if (catModal) {
+    catModal.querySelectorAll('[data-close-modal]').forEach((btn) => {
+      btn.addEventListener('click', () => catModal.close());
+    });
+  }
+  if (catForm) {
+    catForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(catForm));
+      const isEdit = !!data.id;
+      const url = isEdit ? '/api/categories/' + data.id : '/api/categories';
+      const method = isEdit ? 'PATCH' : 'POST';
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: data.name, group_name: data.group_name }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          window.toast('Erro: ' + (err.error || res.status));
+          return;
+        }
+        window.location.reload();
+      } catch (err) {
+        window.toast('Erro: ' + err.message);
+      }
+    });
+  }
+  const catGroupsEl = document.getElementById('cat-groups');
+  if (catGroupsEl) {
+    catGroupsEl.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+      if (action === 'edit-category') {
+        if (catTitleEl) catTitleEl.textContent = 'Editar categoria';
+        catForm.elements.id.value = id;
+        catForm.elements.name.value = btn.dataset.name || '';
+        catForm.elements.group_name.value = btn.dataset.group || '';
+        catModal.showModal();
+        return;
+      }
+      if (action === 'delete-category') {
+        const name = btn.dataset.name || '';
+        if (!window.confirm('Excluir a categoria "' + name + '"?')) return;
+        try {
+          let res = await fetch('/api/categories/' + id, { method: 'DELETE' });
+          if (res.status === 400) {
+            const err = await res.json().catch(() => ({}));
+            if (err && (err.code === 'HAS_COSTS' || err.costs_count)) {
+              const moveTo = window.prompt(
+                'Esta categoria tem ' + err.costs_count + ' custo(s) associado(s). Pra excluir, digite o NOME da categoria pra onde mover esses custos:'
+              );
+              if (!moveTo || !moveTo.trim()) return;
+              res = await fetch('/api/categories/' + id + '?move_to=' + encodeURIComponent(moveTo.trim()), { method: 'DELETE' });
+              if (!res.ok && res.status !== 204) {
+                const e2 = await res.json().catch(() => ({}));
+                window.toast('Erro: ' + (e2.error || res.status));
+                return;
+              }
+            } else {
+              window.toast('Erro: ' + (err.error || res.status));
+              return;
+            }
+          } else if (!res.ok && res.status !== 204) {
+            const err = await res.json().catch(() => ({}));
+            window.toast('Erro: ' + (err.error || res.status));
+            return;
+          }
+          window.location.reload();
+        } catch (err) {
+          window.toast('Erro: ' + err.message);
+        }
+      }
+    });
+  }
+
+  // === Todos os custos (busca + editar) ===
+  const allCostsTbody = document.getElementById('all-costs-tbody');
+  const btnAllCostsSearch = document.getElementById('btn-all-costs-search');
+  function fmtDateShortLocal(ymd) {
+    if (!ymd) return '—';
+    const [y, m, d] = String(ymd).split('-');
+    return d + '/' + m + '/' + y.slice(2);
+  }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  async function searchAllCosts() {
+    const from = document.getElementById('all-costs-from').value;
+    const to = document.getElementById('all-costs-to').value;
+    const cat = document.getElementById('all-costs-cat').value;
+    const status = document.getElementById('all-costs-status').value;
+    const countEl = document.getElementById('all-costs-count');
+    allCostsTbody.innerHTML = '<tr><td colspan="6" class="muted center" style="padding: 20px;">Carregando…</td></tr>';
+    if (countEl) countEl.textContent = '';
+    const qs = new URLSearchParams();
+    if (from) qs.set('from', from);
+    if (to) qs.set('to', to);
+    if (status) qs.set('status', status);
+    qs.set('ads', 'exclude');
+    try {
+      const res = await fetch('/api/costs?' + qs.toString());
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      let rows = await res.json();
+      if (cat) rows = rows.filter((r) => r.category === cat);
+      if (rows.length === 0) {
+        allCostsTbody.innerHTML = '<tr><td colspan="6" class="muted center" style="padding: 20px;">Nenhum custo encontrado.</td></tr>';
+        return;
+      }
+      if (countEl) countEl.textContent = rows.length + ' custo(s)';
+      allCostsTbody.innerHTML = rows.slice(0, 500).map((c) => `
+        <tr>
+          <td>${fmtDateShortLocal(c.date)}</td>
+          <td>${escapeHtml(c.category)}</td>
+          <td>${escapeHtml(c.description || '—')}</td>
+          <td class="num">${BRL.format(Number(c.amount || 0))}</td>
+          <td><span class="badge ${c.status}">${c.status === 'paid' ? 'pago' : 'a pagar'}</span></td>
+          <td>
+            <button type="button" class="btn-link" data-action="all-costs-edit" data-payload='${escapeHtml(JSON.stringify(c))}'>editar</button>
+            <button type="button" class="btn-link danger" data-action="all-costs-delete" data-id="${c.id}">excluir</button>
+          </td>
+        </tr>
+      `).join('');
+      if (rows.length > 500) {
+        allCostsTbody.insertAdjacentHTML('beforeend', '<tr><td colspan="6" class="muted center" style="padding: 12px;">Mostrando primeiros 500 de ' + rows.length + '. Refine os filtros pra ver mais.</td></tr>');
+      }
+    } catch (err) {
+      allCostsTbody.innerHTML = '<tr><td colspan="6" class="muted center" style="padding: 20px;">Erro: ' + escapeHtml(err.message) + '</td></tr>';
+    }
+  }
+  if (btnAllCostsSearch) btnAllCostsSearch.addEventListener('click', searchAllCosts);
+
+  if (allCostsTbody) {
+    allCostsTbody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      if (action === 'all-costs-edit') {
+        const payload = JSON.parse(btn.dataset.payload);
+        const dlg = document.getElementById('modal-edit-cost');
+        if (!dlg) { window.toast('Modal de edição indisponível'); return; }
+        const form = dlg.querySelector('form');
+        form.dataset.endpoint = '/api/costs/' + payload.id;
+        for (const k of ['date', 'amount', 'category', 'description', 'status']) {
+          const el = form.elements[k];
+          if (!el) continue;
+          el.value = payload[k] == null ? '' : payload[k];
+        }
+        dlg.showModal();
+      } else if (action === 'all-costs-delete') {
+        if (!confirm('Excluir este custo?')) return;
+        try {
+          const res = await fetch('/api/costs/' + btn.dataset.id, { method: 'DELETE' });
+          if (!res.ok && res.status !== 204) {
+            const err = await res.json().catch(() => ({}));
+            window.toast('Erro: ' + (err.error || res.status));
+            return;
+          }
+          searchAllCosts();
+        } catch (err) {
+          window.toast('Erro: ' + err.message);
+        }
+      }
+    });
+  }
+
   function loadIntoForm(form, payload, fields) {
     for (const k of fields) {
       const el = form.elements[k];

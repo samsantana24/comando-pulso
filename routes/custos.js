@@ -117,7 +117,9 @@ router.get('/', requireAuth, requireTotp, (req, res) => {
 
   const today = todayYmd();
   const horizon60 = ymd(new Date(Date.now() + 60 * 24 * 60 * 60 * 1000));
-  const pendingReceivables = receivables.list({ status: 'pending', from: today.slice(0, 4) + '-01-01', to: horizon60 })
+  // Carrega TODOS os recebíveis pendentes — vencidos + futuros, sem horizonte máximo.
+  // O filtro 'Todos' / 'Vencidos' / 'Próximos N' é feito client-side.
+  const pendingReceivables = receivables.list({ status: 'pending' })
     .sort((a, b) => a.expected_date.localeCompare(b.expected_date));
 
   function dateAddDays(ymdStr, days) {
@@ -134,14 +136,23 @@ router.get('/', requireAuth, requireTotp, (req, res) => {
       count: filtered.length,
     };
   }
-  const allPending60 = pendingReceivables.filter((r) => r.expected_date >= today && r.expected_date <= horizon60);
+  const allFuturePending = pendingReceivables.filter((r) => r.expected_date >= today);
+  const overduePending = pendingReceivables.filter((r) => r.expected_date < today);
   const recvSummary = {
-    thisWeek: sumAndCountInRange(allPending60, 0, 6),
-    nextWeek: sumAndCountInRange(allPending60, 7, 13),
-    in30: sumAndCountInRange(allPending60, 0, 30),
+    thisWeek: sumAndCountInRange(allFuturePending, 0, 6),
+    nextWeek: sumAndCountInRange(allFuturePending, 7, 13),
+    in30: sumAndCountInRange(allFuturePending, 0, 30),
     inWindow: {
-      sum: allPending60.reduce((a, r) => a + Number(r.expected_amount || 0), 0),
-      count: allPending60.length,
+      sum: allFuturePending.reduce((a, r) => a + Number(r.expected_amount || 0), 0),
+      count: allFuturePending.length,
+    },
+    overdue: {
+      sum: overduePending.reduce((a, r) => a + Number(r.expected_amount || 0), 0),
+      count: overduePending.length,
+    },
+    all: {
+      sum: pendingReceivables.reduce((a, r) => a + Number(r.expected_amount || 0), 0),
+      count: pendingReceivables.length,
     },
   };
 
@@ -164,6 +175,17 @@ router.get('/', requireAuth, requireTotp, (req, res) => {
   for (const c of categories.list()) {
     if (!allCategoriesGrouped[c.group_name]) allCategoriesGrouped[c.group_name] = [];
     allCategoriesGrouped[c.group_name].push(c.name);
+  }
+  const categoriesFullList = categories.list();
+  const categoriesByGroupFull = {};
+  for (const c of categoriesFullList) {
+    if (!categoriesByGroupFull[c.group_name]) categoriesByGroupFull[c.group_name] = [];
+    categoriesByGroupFull[c.group_name].push(c);
+  }
+  const { GROUP_ORDER } = require('../lib/categories');
+  const orderedCatGroups = GROUP_ORDER.filter((g) => categoriesByGroupFull[g] && categoriesByGroupFull[g].length > 0);
+  for (const g of Object.keys(categoriesByGroupFull)) {
+    if (!orderedCatGroups.includes(g)) orderedCatGroups.push(g);
   }
 
   res.render('custos', {
@@ -189,6 +211,8 @@ router.get('/', requireAuth, requireTotp, (req, res) => {
     recentCosts,
     pendingReceivables,
     recvSummary,
+    categoriesByGroupFull,
+    orderedCatGroups,
     totalWeeks,
     activeScenario,
     closers,
