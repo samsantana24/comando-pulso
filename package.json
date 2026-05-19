@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "seed:initial-costs": "node scripts/seed-initial-costs.js"
+    "seed:initial-costs": "node scripts/seed-initial-costs.js",
+    "dedupe:sales": "node scripts/dedupe-sales.js",
+    "dedupe:sales:apply": "node scripts/dedupe-sales.js --apply"
   },
   "engines": { "node": ">=20" },
   "dependencies": {
