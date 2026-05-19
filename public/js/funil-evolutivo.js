@@ -2,8 +2,71 @@
   const bootstrap = window.FUNNEL_BOOTSTRAP || null;
   const init = window.FUNNEL_EVOLUTIVE_INIT || null;
 
-  // === Listeners que rodam INDEPENDENTE do modo (botão Ativar/Desativar) ===
-  setupEnableDisableButtons();
+  // === Event delegation no document (sempre roda, modo evolutivo ou estático) ===
+  // Robusto contra qualquer race condition de DOM ready / ordem de script.
+  document.addEventListener('click', async (ev) => {
+    const enableBtn = ev.target.closest('#btn-enable-evolutive');
+    const disableBtn = ev.target.closest('#btn-disable-evolutive');
+    if (!enableBtn && !disableBtn) return;
+    ev.preventDefault();
+
+    if (enableBtn) {
+      const sel = document.getElementById('weeks-count');
+      const weeks = sel ? Number(sel.value) || 12 : 12;
+      const scenarioId = enableBtn.dataset.scenarioId || (bootstrap && bootstrap.scenarioId);
+      if (!scenarioId) {
+        const msg = 'Erro: cenário não identificado';
+        if (window.toast) window.toast(msg); else alert(msg);
+        return;
+      }
+      if (enableBtn.disabled) return;
+      enableBtn.disabled = true;
+      try {
+        const res = await fetch('/api/funnel/evolutive/' + scenarioId + '/enable', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ weeks }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          const msg = 'Erro: ' + (err.error || ('HTTP ' + res.status));
+          if (window.toast) window.toast(msg); else alert(msg);
+          enableBtn.disabled = false;
+          return;
+        }
+        if (window.toast) window.toast('Modo evolutivo ativado · ' + weeks + ' semanas ✓');
+        setTimeout(() => location.reload(), 400);
+      } catch (err) {
+        const msg = 'Erro: ' + err.message;
+        if (window.toast) window.toast(msg); else alert(msg);
+        enableBtn.disabled = false;
+      }
+      return;
+    }
+
+    if (disableBtn) {
+      const scenarioId = disableBtn.dataset.scenarioId || (bootstrap && bootstrap.scenarioId);
+      if (!scenarioId) return;
+      if (!confirm('Voltar ao modo estático? A timeline configurada é preservada e volta a aparecer se você reativar.')) return;
+      if (disableBtn.disabled) return;
+      disableBtn.disabled = true;
+      try {
+        const res = await fetch('/api/funnel/evolutive/' + scenarioId + '/disable', { method: 'POST' });
+        if (!res.ok) {
+          const msg = 'Erro ao voltar ao modo estático';
+          if (window.toast) window.toast(msg); else alert(msg);
+          disableBtn.disabled = false;
+          return;
+        }
+        if (window.toast) window.toast('Voltou ao modo estático');
+        setTimeout(() => location.reload(), 400);
+      } catch (err) {
+        const msg = 'Erro: ' + err.message;
+        if (window.toast) window.toast(msg); else alert(msg);
+        disableBtn.disabled = false;
+      }
+    }
+  });
 
   // Se não estamos em modo evolutivo, não há timeline pra inicializar — sai aqui.
   if (!init) return;
@@ -267,62 +330,4 @@
   // initial
   recompute();
   setStatus('idle', 'salvo');
-
-  // ========== Setup dos botões Ativar/Desativar (sempre roda) ==========
-  function setupEnableDisableButtons() {
-    const enableBtn = document.getElementById('btn-enable-evolutive');
-    if (enableBtn) {
-      enableBtn.addEventListener('click', async () => {
-        const sel = document.getElementById('weeks-count');
-        const weeks = sel ? Number(sel.value) || 12 : 12;
-        const scenarioId = enableBtn.dataset.scenarioId || (bootstrap && bootstrap.scenarioId);
-        if (!scenarioId) {
-          if (window.toast) window.toast('Erro: cenário não identificado'); else alert('Erro: cenário não identificado');
-          return;
-        }
-        enableBtn.disabled = true;
-        try {
-          const res = await fetch('/api/funnel/evolutive/' + scenarioId + '/enable', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ weeks }),
-          });
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            const msg = 'Erro: ' + (err.error || ('HTTP ' + res.status));
-            if (window.toast) window.toast(msg); else alert(msg);
-            return;
-          }
-          if (window.toast) window.toast('Modo evolutivo ativado · ' + weeks + ' semanas ✓');
-          setTimeout(() => location.reload(), 400);
-        } catch (err) {
-          const msg = 'Erro: ' + err.message;
-          if (window.toast) window.toast(msg); else alert(msg);
-        } finally {
-          enableBtn.disabled = false;
-        }
-      });
-    }
-
-    const disableBtn = document.getElementById('btn-disable-evolutive');
-    if (disableBtn) {
-      disableBtn.addEventListener('click', async () => {
-        const scenarioId = disableBtn.dataset.scenarioId || (bootstrap && bootstrap.scenarioId);
-        if (!scenarioId) return;
-        if (!confirm('Voltar ao modo estático? A timeline configurada é preservada e volta a aparecer se você reativar.')) return;
-        try {
-          const res = await fetch('/api/funnel/evolutive/' + scenarioId + '/disable', { method: 'POST' });
-          if (!res.ok) {
-            if (window.toast) window.toast('Erro ao voltar ao modo estático'); else alert('Erro ao voltar ao modo estático');
-            return;
-          }
-          if (window.toast) window.toast('Voltou ao modo estático');
-          setTimeout(() => location.reload(), 400);
-        } catch (err) {
-          const msg = 'Erro: ' + err.message;
-          if (window.toast) window.toast(msg); else alert(msg);
-        }
-      });
-    }
-  }
 })();
