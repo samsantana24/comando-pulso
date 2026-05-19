@@ -11,14 +11,21 @@
 
 <main class="container custos">
   <section class="toolbar">
-    <form method="GET" action="/custos" class="weeks-selector">
+    <form method="GET" action="/custos" class="weeks-selector" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
       <label>Janela:
-        <select name="weeks" onchange="this.form.submit()">
+        <select name="weeks" onchange="if(this.value){document.getElementById('cf-from').value='';document.getElementById('cf-to').value='';}this.form.submit()">
           <% for (const opt of [1,2,3,4,5,6,8,10]) { %>
-            <option value="<%= opt %>" <%= totalWeeks === opt ? 'selected' : '' %>><%= opt %> sem.</option>
+            <option value="<%= opt %>" <%= totalWeeks === opt && !locals.customFrom ? 'selected' : '' %>><%= opt %> sem.</option>
           <% } %>
         </select>
       </label>
+      <label class="muted small">ou de:
+        <input type="date" id="cf-from" name="from" value="<%= locals.customFrom || '' %>" />
+      </label>
+      <label class="muted small">até:
+        <input type="date" id="cf-to" name="to" value="<%= locals.customTo || '' %>" />
+      </label>
+      <button type="submit" class="btn btn-ghost btn-small">Aplicar período</button>
     </form>
     <div class="cenario-info">
       Cenário: <strong><%= activeScenario ? activeScenario.name : '—' %></strong>
@@ -135,8 +142,8 @@
             <td colspan="<%= weeks.length * 2 + 1 %>"><%= grp %></td>
           </tr>
           <% for (const cat of Object.keys(costsByGroup[grp]).sort()) { %>
-            <tr>
-              <td><%= cat %></td>
+            <tr class="cat-row" data-category="<%- cat.replace(/"/g, '&quot;') %>" data-from="<%= weeks[0].sun %>" data-to="<%= weeks[weeks.length-1].sat %>">
+              <td class="cat-cell"><button type="button" class="cat-toggle" aria-expanded="false" title="Expandir / ver itens"><span class="cat-chev">▸</span> <%= cat %></button></td>
               <% for (const w of weeks) { %>
                 <% const paidV = (costsByGroupPaid[grp] && costsByGroupPaid[grp][cat] && costsByGroupPaid[grp][cat][w.week_id]) || 0 %>
                 <% const plannedV = (costsByGroupPlanned[grp] && costsByGroupPlanned[grp][cat] && costsByGroupPlanned[grp][cat][w.week_id]) || 0 %>
@@ -161,6 +168,11 @@
                   <% } else { %>—<% } %>
                 </td>
               <% } %>
+            </tr>
+            <tr class="cat-detail-row" hidden>
+              <td colspan="<%= weeks.length * 2 + 1 %>" class="cat-detail-cell">
+                <div class="cat-detail-content"><span class="muted small">Clique pra carregar os custos individuais...</span></div>
+              </td>
             </tr>
           <% } %>
           <tr class="row-subtotal">

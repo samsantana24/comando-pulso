@@ -1514,6 +1514,76 @@ button, a, [role="button"], .scenario-item, [data-modal] {
   font-weight: 600;
 }
 
+/* === Drill-down de custos por categoria === */
+.cat-cell { padding: 0 !important; }
+.cat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 16px;
+  background: transparent;
+  border: 0;
+  color: var(--fg);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  transition: background var(--duration-fast) var(--ease-pulso);
+}
+.cat-toggle:hover { background: rgba(255, 46, 90, 0.04); }
+.cat-chev {
+  display: inline-block;
+  width: 12px;
+  color: var(--muted);
+  transition: transform var(--duration-fast) var(--ease-pulso);
+}
+.cat-toggle[aria-expanded="true"] .cat-chev { color: var(--accent); }
+.cat-detail-row td {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.cat-detail-content {
+  padding: 16px 20px;
+}
+.drill-summary {
+  font-size: 12px;
+  color: var(--fg-soft);
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.drill-summary .pos { color: var(--pos); font-weight: 700; }
+.drill-summary .warn { color: var(--warn); font-weight: 700; }
+.drill-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.drill-table th {
+  padding: 8px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  border-bottom: 1px solid var(--line-soft);
+}
+.drill-table th.num { text-align: right; }
+.drill-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--fg-soft);
+}
+.drill-table td.num { text-align: right; font-feature-settings: 'tnum' 1; font-variant-numeric: tabular-nums; }
+.drill-table tr:last-child td { border-bottom: 0; }
+.btn-link.pos { color: var(--pos); }
+.btn-link.warn { color: var(--warn); }
+
 .result-row.result-row-secondary td {
   background: rgba(255, 255, 255, 0.02);
   color: var(--fg-soft);

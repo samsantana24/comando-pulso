@@ -6,7 +6,9 @@ const team = require('../db/queries/team');
 const scenarios = require('../db/queries/scenarios');
 const categories = require('../db/queries/categories');
 const receivables = require('../db/queries/receivables');
-const { getWeeksFromTotal, weekRangeFromDate, weekIdFromSunday, todayYmd, ymd } = require('../lib/weeks');
+const { getWeeksFromTotal, getWeeksBetween, weekRangeFromDate, weekIdFromSunday, todayYmd, ymd } = require('../lib/weeks');
+
+const isYmdLocal = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const { GROUP_ORDER } = require('../lib/categories');
 const { formatBrl, formatDateShort, formatPaymentMethod } = require('../lib/format');
 
@@ -14,7 +16,13 @@ const ADS_GROUP_LABEL = 'INVESTIMENTO EM ADS';
 
 router.get('/', requireAuth, requireTotp, (req, res) => {
   const totalWeeks = Math.max(1, Math.min(10, Number(req.query.weeks) || 4));
-  const weeks = getWeeksFromTotal(totalWeeks);
+  const qFrom = isYmdLocal(req.query.from) ? req.query.from : null;
+  const qTo = isYmdLocal(req.query.to) ? req.query.to : null;
+  const weeks = (qFrom && qTo && qFrom <= qTo)
+    ? getWeeksBetween(qFrom, qTo)
+    : getWeeksFromTotal(totalWeeks);
+  const customFrom = qFrom;
+  const customTo = qTo;
   const fromDate = weeks[0].sun;
   const toDate = weeks[weeks.length - 1].sat;
   const activeScenario = scenarios.getActive();
@@ -214,6 +222,8 @@ router.get('/', requireAuth, requireTotp, (req, res) => {
     categoriesByGroupFull,
     orderedCatGroups,
     totalWeeks,
+    customFrom,
+    customTo,
     activeScenario,
     closers,
     categoriesByGroup: allCategoriesGrouped,

@@ -1,6 +1,149 @@
 (function () {
   const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  // === Drill-down de custos por categoria (expand/collapse) ===
+  function escapeHtmlSafe(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function fmtDateShortDrill(ymd) {
+    if (!ymd) return '—';
+    const [y, m, d] = String(ymd).split('-');
+    return d + '/' + m + '/' + y.slice(2);
+  }
+
+  document.querySelectorAll('.cat-toggle').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const tr = btn.closest('tr.cat-row');
+      const detailTr = tr.nextElementSibling;
+      if (!detailTr || !detailTr.classList.contains('cat-detail-row')) return;
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      if (expanded) {
+        btn.setAttribute('aria-expanded', 'false');
+        btn.querySelector('.cat-chev').textContent = '▸';
+        detailTr.hidden = true;
+        return;
+      }
+      btn.setAttribute('aria-expanded', 'true');
+      btn.querySelector('.cat-chev').textContent = '▾';
+      detailTr.hidden = false;
+      const contentEl = detailTr.querySelector('.cat-detail-content');
+      contentEl.innerHTML = '<span class="muted small">Carregando...</span>';
+      try {
+        const category = tr.dataset.category;
+        const from = tr.dataset.from;
+        const to = tr.dataset.to;
+        const qs = new URLSearchParams();
+        qs.set('from', from);
+        qs.set('to', to);
+        qs.set('ads', 'exclude');
+        const res = await fetch('/api/costs?' + qs.toString());
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const all = await res.json();
+        const rows = all.filter((r) => r.category === category);
+        if (rows.length === 0) {
+          contentEl.innerHTML = '<p class="muted small" style="padding: 12px 0;">Nenhum custo individual nesta janela pra ' + escapeHtmlSafe(category) + '.</p>';
+          return;
+        }
+        const total = rows.reduce((a, r) => a + Number(r.amount || 0), 0);
+        const totalPaid = rows.filter((r) => r.status === 'paid').reduce((a, r) => a + Number(r.amount || 0), 0);
+        const totalPlanned = rows.filter((r) => r.status === 'planned').reduce((a, r) => a + Number(r.amount || 0), 0);
+        const html = [];
+        html.push('<div class="drill-summary">');
+        html.push('<strong>' + escapeHtmlSafe(category) + '</strong> · ' + rows.length + ' lançamento(s) · ');
+        html.push('pago <span class="pos">' + BRL.format(totalPaid) + '</span> · ');
+        html.push('a pagar <span class="warn">' + BRL.format(totalPlanned) + '</span> · ');
+        html.push('total <strong>' + BRL.format(total) + '</strong>');
+        html.push('</div>');
+        html.push('<table class="drill-table"><thead><tr><th>Data</th><th>Descrição</th><th class="num">Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>');
+        for (const r of rows) {
+          const payload = escapeHtmlSafe(JSON.stringify(r));
+          html.push('<tr>');
+          html.push('<td>' + fmtDateShortDrill(r.date) + '</td>');
+          html.push('<td>' + escapeHtmlSafe(r.description || '—') + (r.recurrence_id ? ' <span class="badge recur">recorrente</span>' : '') + '</td>');
+          html.push('<td class="num">' + BRL.format(Number(r.amount || 0)) + '</td>');
+          html.push('<td><span class="badge ' + r.status + '">' + (r.status === 'paid' ? 'pago' : 'a pagar') + '</span></td>');
+          html.push('<td>');
+          html.push('<button type="button" class="btn-link" data-action="drill-edit" data-payload="' + payload + '">editar</button>');
+          if (r.status === 'planned') {
+            html.push(' <button type="button" class="btn-link pos" data-action="drill-mark-paid" data-id="' + r.id + '" data-date="' + r.date + '">marcar pago</button>');
+          } else {
+            html.push(' <button type="button" class="btn-link warn" data-action="drill-revert" data-id="' + r.id + '">reverter</button>');
+          }
+          html.push(' <button type="button" class="btn-link danger" data-action="drill-delete" data-id="' + r.id + '">excluir</button>');
+          html.push('</td>');
+          html.push('</tr>');
+        }
+        html.push('</tbody></table>');
+        contentEl.innerHTML = html.join('');
+      } catch (err) {
+        contentEl.innerHTML = '<p class="muted small">Erro: ' + escapeHtmlSafe(err.message) + '</p>';
+      }
+    });
+  });
+
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action="drill-edit"],[data-action="drill-delete"],[data-action="drill-mark-paid"],[data-action="drill-revert"]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'drill-edit') {
+      const payload = JSON.parse(btn.dataset.payload);
+      const dlg = document.getElementById('modal-edit-cost');
+      if (!dlg) return;
+      const form = dlg.querySelector('form');
+      form.dataset.endpoint = '/api/costs/' + payload.id;
+      for (const k of ['date', 'amount', 'category', 'description', 'status']) {
+        const el = form.elements[k];
+        if (!el) continue;
+        el.value = payload[k] == null ? '' : payload[k];
+      }
+      dlg.showModal();
+      return;
+    }
+    if (action === 'drill-mark-paid') {
+      try {
+        const res = await fetch('/api/costs/' + btn.dataset.id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'paid' }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          window.toast('Erro: ' + (err.error || res.status));
+          return;
+        }
+        window.toast('Custo marcado como pago ✓');
+        setTimeout(() => location.reload(), 400);
+      } catch (err) { window.toast('Erro: ' + err.message); }
+      return;
+    }
+    if (action === 'drill-revert') {
+      if (!confirm('Reverter este custo pra "a pagar"?')) return;
+      try {
+        const res = await fetch('/api/costs/' + btn.dataset.id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'planned' }),
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        window.toast('Custo revertido pra "a pagar"');
+        setTimeout(() => location.reload(), 400);
+      } catch (err) { window.toast('Erro: ' + err.message); }
+      return;
+    }
+    if (action === 'drill-delete') {
+      if (!confirm('Excluir este custo? Não pode ser desfeito.')) return;
+      try {
+        const res = await fetch('/api/costs/' + btn.dataset.id, { method: 'DELETE' });
+        if (!res.ok && res.status !== 204) {
+          const err = await res.json().catch(() => ({}));
+          window.toast('Erro: ' + (err.error || res.status));
+          return;
+        }
+        setTimeout(() => location.reload(), 300);
+      } catch (err) { window.toast('Erro: ' + err.message); }
+    }
+  });
+
   // === Categorias CRUD (Rachel + Sâmeque) ===
   const catModal = document.getElementById('modal-category');
   const catForm = document.getElementById('form-category');
