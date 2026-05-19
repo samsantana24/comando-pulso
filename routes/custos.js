@@ -190,7 +190,6 @@ router.get('/', requireAuth, requireTotp, (req, res) => {
     if (!categoriesByGroupFull[c.group_name]) categoriesByGroupFull[c.group_name] = [];
     categoriesByGroupFull[c.group_name].push(c);
   }
-  const { GROUP_ORDER } = require('../lib/categories');
   const orderedCatGroups = GROUP_ORDER.filter((g) => categoriesByGroupFull[g] && categoriesByGroupFull[g].length > 0);
   for (const g of Object.keys(categoriesByGroupFull)) {
     if (!orderedCatGroups.includes(g)) orderedCatGroups.push(g);
